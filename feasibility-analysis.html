@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acuity Integration - High-Level Feasibility Analysis</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #16a34a;
+            --success-light: #dcfce7;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --purple: #7c3aed;
+            --purple-light: #ede9fe;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .header .date {
+            opacity: 0.7;
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-feasible { background: var(--success-light); color: var(--success); }
+        .badge-async { background: var(--warning-light); color: var(--warning); }
+        .badge-new { background: var(--purple-light); color: var(--purple); }
+        .badge-reuse { background: var(--primary-light); color: var(--primary); }
+
+        .tldr {
+            background: white;
+            border: 2px solid var(--success);
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .tldr h2 {
+            color: var(--success);
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .tldr ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tldr li {
+            padding: 0.35rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .tldr li::before {
+            content: "\2713";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--gray-200);
+        }
+
+        .section h2 {
+            font-size: 1.2rem;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--gray-100);
+        }
+
+        .section h3 {
+            font-size: 1rem;
+            color: var(--gray-700);
+            margin: 1.25rem 0 0.5rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.75rem 0;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--gray-100);
+            padding: 0.6rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--gray-700);
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        td {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--gray-100);
+            vertical-align: top;
+        }
+
+        tr:hover { background: var(--gray-50); }
+
+        .flow-diagram {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            overflow-x: auto;
+            white-space: pre;
+            margin: 0.75rem 0;
+        }
+
+        .callout {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid;
+        }
+
+        .callout-info {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .callout-warning {
+            background: var(--warning-light);
+            border-color: var(--warning);
+        }
+
+        .callout-success {
+            background: var(--success-light);
+            border-color: var(--success);
+        }
+
+        .callout strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 0.75rem 0;
+        }
+
+        .col-card {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .col-card h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--gray-700);
+        }
+
+        .col-card ul {
+            padding-left: 1.25rem;
+            font-size: 0.9rem;
+        }
+
+        .col-card li {
+            padding: 0.2rem 0;
+        }
+
+        .tier-table td:first-child {
+            font-weight: 600;
+        }
+
+        .risk-high { color: var(--danger); }
+        .risk-med { color: var(--warning); }
+        .risk-low { color: var(--success); }
+
+        .next-steps ol {
+            padding-left: 1.5rem;
+        }
+
+        .next-steps li {
+            padding: 0.4rem 0;
+        }
+
+        .next-steps .step-type {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.25rem;
+        }
+
+        .step-business { background: var(--purple-light); color: var(--purple); }
+        .step-technical { background: var(--primary-light); color: var(--primary); }
+
+        .footer {
+            text-align: center;
+            color: var(--gray-600);
+            font-size: 0.8rem;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        @media print {
+            body { padding: 0.5rem; background: white; }
+            .section { break-inside: avoid; border: 1px solid #ccc; }
+            .header { background: #2563eb !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 1rem; }
+            .two-col { grid-template-columns: 1fr; }
+            table { font-size: 0.8rem; }
+        }
+    </style>
+
+<!--[if gte mso 9]><xml>
+<mso:CustomDocumentProperties>
+<mso:DLCPolicyLabelValue msdt:dt="string">0.1</mso:DLCPolicyLabelValue>
+</mso:CustomDocumentProperties>
+</xml><![endif]-->
+</head>
+<body>
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header">
+            <h1>Acuity Integration - Feasibility Analysis</h1>
+            <div class="subtitle">JaroDesk &rarr; Acuity (ClearValue) &rarr; JaroDesk &nbsp;|&nbsp; PDR / PDC Products</div>
+            <div class="date">Prepared: April 17, 2026 &nbsp;|&nbsp; Status: Exploratory &nbsp;|&nbsp; Source: <a href="https://providers.clearvalueconsulting.com/AcuityIntegrationFramework.html" style="color:#93c5fd;">AcuityExchange Framework Spec</a></div>
+        </div>
+
+        <!-- TL;DR -->
+        <div class="tldr">
+            <h2>Bottom Line</h2>
+            <ul>
+                <li><strong>This integration is feasible</strong> &mdash; Acuity's XML protocol closely mirrors our existing Magellan (AVM) integration</li>
+                <li><strong>Fits under AlternativeProductsRouter</strong> as a new child flow alongside AVM and Flood Cert</li>
+                <li><strong>One key difference:</strong> Acuity is asynchronous (results return hours/days later), requiring a two-flow design</li>
+                <li><strong>~70% of the work is reusable</strong> from existing JaroDesk patterns (auth, file upload, tagging, delivery)</li>
+                <li><strong>Authentication is simpler</strong> than our current integrations (HTTP Basic Auth, no token refresh)</li>
+            </ul>
+        </div>
+
+        <!-- What Is Acuity -->
+        <div class="section">
+            <h2>What Is Acuity?</h2>
+            <p><strong>AcuityExchange</strong> (by ClearValue Consulting) is a mortgage services exchange platform for ordering and receiving appraisals, inspections, title, flood, and other valuation products electronically. It uses an <strong>XML message-based protocol over HTTPS</strong> with ~23 message types covering the full order lifecycle from placement through final delivery.</p>
+            <p style="margin-top:0.5rem;">The likely Opteon use case is ordering <strong>PDR (Property Data Report)</strong> and/or <strong>PDC (Property Data Collection)</strong> products &mdash; alternative, lighter-weight inspection/data collection products (possibly branded as "Valor").</p>
+        </div>
+
+        <!-- Architecture Fit -->
+        <div class="section">
+            <h2>Architecture Fit: How Acuity Maps to Our Existing Patterns</h2>
+
+            <p>Our integrations already follow this proven pattern:</p>
+            <div class="flow-diagram">JaroDesk webhook &rarr; Get order details &rarr; Transform to vendor format &rarr; Send to vendor &rarr; Get result &rarr; Upload file to JaroDesk &rarr; Tag &amp; deliver</div>
+
+            <p>Acuity fits this pattern. Here's how it compares to our existing vendor integrations:</p>
+
+            <table>
+                <thead>
+                    <tr><th>Aspect</th><th>Magellan (AVM)</th><th>AFR (Flood)</th><th>Acuity (new)</th><th>Fit</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Protocol</td><td>XML</td><td>JSON</td><td>XML</td><td><span class="badge badge-reuse">Identical to Magellan</span></td></tr>
+                    <tr><td>Authentication</td><td>Creds in XML body</td><td>Cookie/session</td><td>HTTP Basic Auth</td><td><span class="badge badge-feasible">Simpler</span></td></tr>
+                    <tr><td>Result format</td><td>Base64 PDF in XML</td><td>JSON + PDF download</td><td>Base64 PDF in XML</td><td><span class="badge badge-reuse">Identical to Magellan</span></td></tr>
+                    <tr><td>Response timing</td><td>Sync (~5 min)</td><td>Sync (instant)</td><td><strong>Async (hours/days)</strong></td><td><span class="badge badge-async">Key difference</span></td></tr>
+                    <tr><td>File upload to Jaro</td><td>3-step pattern</td><td>3-step pattern</td><td>3-step pattern</td><td><span class="badge badge-reuse">Reusable</span></td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout callout-warning">
+                <strong>Key Difference: Asynchronous Delivery</strong>
+                Our existing integrations (Magellan, AFR) return results in the same flow run. Acuity sends an immediate acknowledgement, then delivers the completed report <strong>hours or days later</strong> via a separate HTTP POST. This requires a <strong>two-flow design</strong>.
+            </div>
+        </div>
+
+        <!-- Two-Flow Architecture -->
+        <div class="section">
+            <h2>Proposed Architecture: Two-Flow Design</h2>
+
+            <div class="flow-diagram">AlternativeProductsRouter (parent)
+  |
+  +-- Magellan AVM child       (sync  - XML  - result in ~5 min)
+  +-- AFR Flood Cert child     (sync  - JSON - result instant)
+  +-- <span style="color:#2563eb;font-weight:bold;">Acuity PDR/PDC child</span>     (async - XML  - result hours/days later)
+        |
+        +-- <span style="color:#16a34a;">Outbound child flow:</span> called by router, places order, returns acknowledgement
+        +-- <span style="color:#d97706;">Inbound standalone flow:</span> HTTP trigger, receives AcuityReport, uploads to JaroDesk</div>
+
+            <div class="two-col">
+                <div class="col-card">
+                    <h4 style="color:var(--success);">Flow 1: Outbound (JaroDesk &rarr; Acuity)</h4>
+                    <ul>
+                        <li>Triggered by JaroDesk webhook (via router)</li>
+                        <li>Gets order details from JaroDesk API</li>
+                        <li>Maps fields to AcuityOrder XML</li>
+                        <li>POSTs to Acuity with Basic Auth</li>
+                        <li>Parses AcuityAcknowledgement</li>
+                        <li>Logs order mapping for later lookup</li>
+                        <li>Returns to router (does NOT wait for result)</li>
+                    </ul>
+                </div>
+                <div class="col-card">
+                    <h4 style="color:var(--warning);">Flow 2: Inbound (Acuity &rarr; JaroDesk)</h4>
+                    <ul>
+                        <li>Triggered by Acuity HTTP POST to our endpoint</li>
+                        <li>Parses XML message, identifies message type</li>
+                        <li>On AcuityReport: extracts Base64 document</li>
+                        <li>Looks up JaroDesk order via stored mapping</li>
+                        <li>Uploads PDF to JaroDesk (3-step pattern)</li>
+                        <li>Tags order &amp; triggers delivery</li>
+                        <li>Logs completion, notifies team via Teams</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="callout callout-info">
+                <strong>Why not one flow?</strong>
+                The router can't "wait" for Acuity like it waits for Magellan/AFR. The outbound flow fires and forgets. When Acuity finishes (potentially days later), the inbound flow independently completes the job.
+            </div>
+        </div>
+
+        <!-- Order Lifecycle -->
+        <div class="section">
+            <h2>Order Lifecycle: Key Acuity Messages</h2>
+            <p>Acuity has ~23 message types. Not all need handling on day one. Here's the priority breakdown:</p>
+            <table>
+                <thead>
+                    <tr><th>Acuity Message</th><th>What It Means</th><th>Our Action</th><th>Priority</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>AcuityOrder</code> (outbound)</td><td>We place the order</td><td>Build &amp; send XML</td><td><span class="badge badge-feasible">MVP</span></td></tr>
+                    <tr><td><code>AcuityAcknowledgement</code></td><td>Acuity confirms receipt</td><td>Log success/failure</td><td><span class="badge badge-feasible">MVP</span></td></tr>
+                    <tr><td><code>AcuityReport</code></td><td><strong>Finished product delivered</strong></td><td>Extract PDF, upload to JaroDesk, deliver</td><td><span class="badge badge-feasible">MVP</span></td></tr>
+                    <tr><td><code>AcuityOrderAcceptance</code></td><td>Vendor accepted</td><td>Log status</td><td><span class="badge badge-async">Standard</span></td></tr>
+                    <tr><td><code>AcuityAssignment</code></td><td>Inspector assigned</td><td>Log inspector info</td><td><span class="badge badge-async">Standard</span></td></tr>
+                    <tr><td><code>AcuityInspectionComplete</code></td><td>Site visit done</td><td>Log milestone</td><td><span class="badge badge-async">Standard</span></td></tr>
+                    <tr><td><code>AcuityDelay</code></td><td>Order on hold</td><td>Notify team</td><td><span class="badge badge-async">Standard</span></td></tr>
+                    <tr><td><code>AcuityCancellation</code></td><td>Cancellation requested</td><td>Handle &amp; notify</td><td><span class="badge badge-async">Standard</span></td></tr>
+                    <tr><td><code>AcuityFeeRequest</code></td><td>Fee adjustment needed</td><td>Notify for approval</td><td><span class="badge badge-new">Full</span></td></tr>
+                    <tr><td><code>AcuityRevisionRequest</code></td><td>Corrections needed</td><td>Route for review</td><td><span class="badge badge-new">Full</span></td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout callout-success">
+                <strong>MVP = 3 message types.</strong> At minimum, you only need to handle sending the order, confirming the acknowledgement, and receiving the final report. Everything else is status visibility that can be added later.
+            </div>
+        </div>
+
+        <!-- Data Mapping -->
+        <div class="section">
+            <h2>Data Mapping: JaroDesk &rarr; Acuity</h2>
+            <table>
+                <thead>
+                    <tr><th>JaroDesk Field</th><th>Acuity XML Field</th><th>Notes</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Order ID</td><td><code>PartnerReferenceNumber</code></td><td>JaroDesk order ID becomes the tracking key</td></tr>
+                    <tr><td>Product / Form type</td><td><code>ProductCode</code></td><td>Lookup table needed (Jaro product &rarr; Acuity code)</td></tr>
+                    <tr><td>Loan type</td><td><code>Loan &gt; LoanType</code></td><td>Enum mapping (Conventional, FHA, VA, etc.)</td></tr>
+                    <tr><td>Loan purpose</td><td><code>Loan &gt; LoanPurpose</code></td><td>Enum mapping (Purchase, Refinance, etc.)</td></tr>
+                    <tr><td>Loan number</td><td><code>Loan &gt; LoanNumber</code></td><td>Direct pass-through</td></tr>
+                    <tr><td>Property address</td><td><code>SubjectProperty &gt; Address1/City/State/PostalCode</code></td><td>Direct mapping</td></tr>
+                    <tr><td>Property type</td><td><code>SubjectProperty &gt; PropertyType</code></td><td>Enum mapping needed</td></tr>
+                    <tr><td>Sales price</td><td><code>SubjectProperty &gt; SalesPrice</code></td><td>Direct pass-through</td></tr>
+                    <tr><td>Borrower name</td><td><code>Contact[@ContactType="Borrower"]</code></td><td>Split into FirstName / LastName</td></tr>
+                    <tr><td>Borrower phone</td><td><code>Contact &gt; DaytimePhone</code></td><td>Direct pass-through</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Authentication -->
+        <div class="section">
+            <h2>Authentication</h2>
+            <p>Acuity uses <strong>HTTP Basic Auth</strong> &mdash; significantly simpler than our existing vendor integrations:</p>
+            <div class="flow-diagram" style="font-size:0.9rem;">Authorization: Basic [Base64(username:password)]</div>
+            <ul style="margin-top:0.75rem; padding-left:1.5rem;">
+                <li><strong>No token refresh logic</strong> needed (unlike JaroDesk's rolling session tokens)</li>
+                <li><strong>No separate login endpoint</strong> (unlike Reggora's dual-URL auth)</li>
+                <li>Credentials stored in <strong>Power Automate environment variables</strong> (DEV vs PROD)</li>
+                <li>TLS 1.2 required (standard for Power Automate HTTP connector)</li>
+            </ul>
+        </div>
+
+        <!-- What's Reusable vs New -->
+        <div class="section">
+            <h2>Build vs. Reuse Breakdown</h2>
+            <div class="two-col">
+                <div class="col-card" style="border-color:var(--success);">
+                    <h4 style="color:var(--success);">Reusable from Existing Environment (~70%)</h4>
+                    <ul>
+                        <li>JaroDesk authentication (Dataverse TokenCache)</li>
+                        <li>JaroDesk order retrieval (GET /v1/order/{id})</li>
+                        <li>3-step file upload (signed URL &rarr; S3 &rarr; attach)</li>
+                        <li>Order tagging &amp; delivery workflow</li>
+                        <li>SharePoint logging pattern</li>
+                        <li>Teams notification pattern</li>
+                        <li>AlternativeProductsRouter dispatch logic</li>
+                        <li>Environment variable pattern (DEV/PROD)</li>
+                    </ul>
+                </div>
+                <div class="col-card" style="border-color:var(--purple);">
+                    <h4 style="color:var(--purple);">New Build Required (~30%)</h4>
+                    <ul>
+                        <li>Outbound flow (XML construction &amp; POST)</li>
+                        <li>Inbound flow (HTTP trigger &amp; XML parsing)</li>
+                        <li>Product code lookup table</li>
+                        <li>Order mapping storage (Jaro ID &harr; Acuity ref)</li>
+                        <li>New routing condition in AlternativeProductsRouter</li>
+                        <li>Micro integration docs for Acuity endpoints</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risks -->
+        <div class="section">
+            <h2>Risks &amp; Considerations</h2>
+            <table>
+                <thead>
+                    <tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Async lifecycle tracking</td>
+                        <td class="risk-med">Medium</td>
+                        <td>Use JaroDesk order ID as PartnerReferenceNumber for reliable matching</td>
+                    </tr>
+                    <tr>
+                        <td>XML construction in Power Automate</td>
+                        <td class="risk-low">Low</td>
+                        <td>Already proven with Magellan; same string concat / Compose approach</td>
+                    </tr>
+                    <tr>
+                        <td>Large documents (up to 100MB)</td>
+                        <td class="risk-med">Medium</td>
+                        <td>Test with real payloads; PA has flow run size limits that may need workarounds</td>
+                    </tr>
+                    <tr>
+                        <td>Inbound endpoint security</td>
+                        <td class="risk-med">Medium</td>
+                        <td>Validate SenderID in all inbound messages; consider IP allowlisting</td>
+                    </tr>
+                    <tr>
+                        <td>Product code mapping unknown</td>
+                        <td class="risk-low">Low</td>
+                        <td>Requires business conversation with Acuity/ClearValue to confirm PDR/PDC codes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Comparison -->
+        <div class="section">
+            <h2>Vendor Integration Comparison</h2>
+            <table>
+                <thead>
+                    <tr><th>Capability</th><th>Magellan (AVM)</th><th>AFR (Flood)</th><th>Reggora</th><th style="background:var(--primary-light);">Acuity (new)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Protocol</td><td>XML</td><td>JSON</td><td>JSON</td><td><strong>XML</strong></td></tr>
+                    <tr><td>Auth</td><td>Embedded creds</td><td>Cookie/session</td><td>Bearer + API key</td><td><strong>Basic Auth</strong></td></tr>
+                    <tr><td>Timing</td><td>Sync (~5 min)</td><td>Sync (instant)</td><td>Async (email)</td><td><strong>Async (HTTP)</strong></td></tr>
+                    <tr><td>Result format</td><td>Base64 PDF</td><td>JSON + PDF</td><td>PDF download</td><td><strong>Base64 PDF in XML</strong></td></tr>
+                    <tr><td>Complexity</td><td>Medium</td><td>Low</td><td>Medium</td><td><strong>Medium-High</strong></td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top:0.5rem; color:var(--gray-600); font-size:0.9rem;">Acuity is closest to <strong>Magellan</strong> in protocol (XML + Base64 PDF) but closest to <strong>Reggora</strong> in lifecycle (async, multi-step).</p>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="section next-steps">
+            <h2>Next Steps (if project moves forward)</h2>
+            <ol>
+                <li><span class="step-type step-business">Business</span> Confirm the specific Acuity product codes for PDR/PDC (and whether "Valor" is the brand name)</li>
+                <li><span class="step-type step-business">Business</span> Get Acuity sandbox/test credentials from ClearValue Consulting</li>
+                <li><span class="step-type step-business">Business</span> Confirm SenderID / RecipientID values with Acuity</li>
+                <li><span class="step-type step-technical">Technical</span> Download Acuity XSD schema package (v6.4.0) for validation reference</li>
+                <li><span class="step-type step-technical">Technical</span> Create micro integration documentation (<code>_micro_integrations/acuity/</code>)</li>
+                <li><span class="step-type step-technical">Technical</span> Build MVP outbound flow in DEV environment</li>
+                <li><span class="step-type step-technical">Technical</span> Set up HTTP trigger for inbound messages, test with Acuity sandbox</li>
+            </ol>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Acuity Integration Feasibility Analysis &nbsp;|&nbsp; Opteon Business Excellence &nbsp;|&nbsp; April 17, 2026</p>
+            <p style="margin-top:0.25rem;">Source: <a href="https://providers.clearvalueconsulting.com/AcuityIntegrationFramework.html">AcuityExchange Integration Framework</a></p>
+        </div>
+
+    </div>
+</body>
+</html>
