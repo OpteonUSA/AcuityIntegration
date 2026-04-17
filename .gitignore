@@ -1,0 +1,18 @@
+# Environment files
+.env
+*.env
+
+# Credentials
+credentials.json
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Power Automate exports (track these explicitly)
+# *.zip

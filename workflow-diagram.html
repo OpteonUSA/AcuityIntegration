@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AcuityIntegration - Workflow Diagram</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0078d4;
+            margin-bottom: 10px;
+            border-bottom: 3px solid #0078d4;
+            padding-bottom: 10px;
+        }
+        .summary-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .summary-box h2 { margin-bottom: 15px; font-size: 1.5em; }
+        .summary-box p { line-height: 1.6; font-size: 1.1em; }
+        .flow-section {
+            margin-top: 30px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .flow-section.outbound { border-left: 5px solid #28a745; }
+        .flow-section.inbound { border-left: 5px solid #d97706; }
+        .flow-label {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .flow-label.outbound { color: #28a745; }
+        .flow-label.inbound { color: #d97706; }
+        .workflow-step {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .workflow-step:hover {
+            border-color: #0078d4;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .step-number {
+            display: inline-block;
+            background: #0078d4;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            margin-right: 15px;
+            vertical-align: middle;
+        }
+        .step-number.outbound { background: #28a745; }
+        .step-number.inbound { background: #d97706; }
+        .step-content {
+            display: inline-block;
+            vertical-align: middle;
+            width: calc(100% - 60px);
+        }
+        .step-title { font-weight: 600; font-size: 1.1em; color: #333; margin-bottom: 8px; }
+        .step-description { color: #666; line-height: 1.5; }
+        .step-badges { margin-top: 10px; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-top: 5px;
+        }
+        .badge-pattern { background: #28a745; color: white; }
+        .badge-integration { background: #17a2b8; color: white; }
+        .badge-component { background: #6f42c1; color: white; }
+        .badge-new { background: #dc3545; color: white; }
+        .arrow { text-align: center; color: #0078d4; font-size: 1.5em; margin: 5px 0; font-weight: bold; }
+        .async-divider {
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            background: #fff3cd;
+            border: 2px dashed #d97706;
+            border-radius: 8px;
+            color: #856404;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .legend {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        .legend h3 { margin-bottom: 15px; color: #0078d4; }
+        .legend-item { margin-bottom: 10px; }
+        .legend-item .badge { margin-right: 10px; }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            color: #666;
+            font-size: 0.9em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AcuityIntegration - Automation Workflow</h1>
+
+        <div class="summary-box">
+            <h2>Automation Overview</h2>
+            <p>
+                <strong>What this automation does:</strong> Orders PDR (Property Data Report) and PDC (Property Data Collection) alternative valuation products through Acuity (ClearValue Consulting) and returns completed reports to JaroDesk. Operates as a child flow within the AlternativeProductsRouter.
+            </p>
+            <p style="margin-top: 15px;">
+                <strong>Key Features:</strong> XML-based API integration with Acuity | Asynchronous two-flow design (outbound order + inbound report) | Base64 PDF extraction and upload | Automated JaroDesk order tagging and delivery | Order mapping for async tracking
+            </p>
+        </div>
+
+        <!-- Outbound Flow -->
+        <div class="flow-section outbound">
+            <div class="flow-label outbound">FLOW 1: Outbound (JaroDesk &rarr; Acuity)</div>
+
+            <div class="workflow-step">
+                <span class="step-number outbound">1</span>
+                <div class="step-content">
+                    <div class="step-title">Trigger: AlternativeProductsRouter Dispatch</div>
+                    <div class="step-description">
+                        Parent router receives JaroDesk webhook for a PDR/PDC product and calls this child flow with order details.
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge badge-component">AlternativeProductsRouter</span>
+                        <span class="badge badge-integration">JaroDesk Webhook</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="workflow-step">
+                <span class="step-number outbound">2</span>
+                <div class="step-content">
+                    <div class="step-title">Get JaroDesk Order Details</div>
+                    <div class="step-description">
+                        Retrieve full order data from JaroDesk API (property address, loan info, borrower contacts, product type).
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge badge-integration">JaroDesk GET /v1/order</span>
+                        <span class="badge badge-pattern">Token Cache Pattern</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="workflow-step">
+                <span class="step-number outbound">3</span>
+                <div class="step-content">
+                    <div class="step-title">Build AcuityOrder XML</div>
+                    <div class="step-description">
+                        Map JaroDesk fields to Acuity XML schema: loan type/purpose, subject property, contacts, product code. Use JaroDesk order ID as PartnerReferenceNumber.
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge badge-new">Acuity XML Format</span>
+                        <span class="badge badge-pattern">Null-Safe Access</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="workflow-step">
+                <span class="step-number outbound">4</span>
+                <div class="step-content">
+                    <div class="step-title">POST to Acuity & Handle Acknowledgement</div>
+                    <div class="step-description">
+                        Send AcuityOrder XML via HTTPS POST with Basic Auth header. Parse synchronous AcuityAcknowledgement response (Success/Error). Store order mapping for async tracking.
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge badge-new">Acuity Basic Auth</span>
+                        <span class="badge badge-pattern">SharePoint Logging</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Async Divider -->
+        <div class="async-divider">
+            ASYNCHRONOUS GAP &mdash; Hours or days pass while Acuity fulfills the order
+        </div>
+
+        <!-- Inbound Flow -->
+        <div class="flow-section inbound">
+            <div class="flow-label inbound">FLOW 2: Inbound (Acuity &rarr; JaroDesk)</div>
+
+            <div class="workflow-step">
+                <span class="step-number inbound">5</span>
+                <div class="step-content">
+                    <div class="step-title">Trigger: Acuity HTTP POST</div>
+                    <div class="step-description">
+                        Acuity POSTs an AcuityReport XML message to our Power Automate HTTP trigger endpoint when the completed report is ready.
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge badge-new">HTTP Trigger Endpoint</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="workflow-step">
+                <span class="step-number inbound">6</span>
+                <div class="step-content">
+                    <div class="step-title">Parse XML & Extract Document</div>
+                    <div class="step-description">
+                        Parse AcuityReport XML. Extract base64-encoded PDF from Document element. Look up JaroDesk order ID using PartnerReferenceNumber from order mapping.
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge badge-new">XML Parsing</span>
+                        <span class="badge badge-new">Base64 Decode</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="workflow-step">
+                <span class="step-number inbound">7</span>
+                <div class="step-content">
+                    <div class="step-title">Upload PDF to JaroDesk</div>
+                    <div class="step-description">
+                        Upload completed report to JaroDesk order using 3-step file upload pattern: get signed URL, upload to S3, attach to order.
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge badge-pattern">3-Step File Upload</span>
+                        <span class="badge badge-integration">JaroDesk File API</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="workflow-step">
+                <span class="step-number inbound">8</span>
+                <div class="step-content">
+                    <div class="step-title">Tag, Deliver & Notify</div>
+                    <div class="step-description">
+                        Add "Automation" tag to JaroDesk order. Trigger delivery workflow. Log completion to SharePoint. Send Teams notification.
+                    </div>
+                    <div class="step-badges">
+                        <span class="badge badge-pattern">Order Tagging</span>
+                        <span class="badge badge-pattern">SharePoint Logging</span>
+                        <span class="badge badge-pattern">Teams Notification</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h3>Badge Legend</h3>
+            <div class="legend-item">
+                <span class="badge badge-pattern">Pattern</span>
+                <span>Reusable pattern from existing integrations</span>
+            </div>
+            <div class="legend-item">
+                <span class="badge badge-integration">Integration</span>
+                <span>Documented API endpoint from <code>_micro_integrations/</code></span>
+            </div>
+            <div class="legend-item">
+                <span class="badge badge-component">Component</span>
+                <span>Reuses a component from another project</span>
+            </div>
+            <div class="legend-item">
+                <span class="badge badge-new">New</span>
+                <span>New capability specific to this Acuity integration</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Last Updated:</strong> April 17, 2026 | <strong>Maintained by:</strong> Sal/Brett</p>
+            <p style="margin-top: 10px; font-size: 0.85em; color: #999;">
+                This diagram should be updated whenever the automation workflow changes.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
