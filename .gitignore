@@ -5,6 +5,9 @@
 # Credentials
 credentials.json
 secrets.json
+tools/.acuity_sandbox.local.json
+tools/CALL_CHECKLIST.md
+samples/
 
 # OS files
 .DS_Store

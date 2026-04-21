@@ -3,7 +3,7 @@
 ## Current Status: In Progress
 
 **Owner:** Sal/Brett  
-**Last Updated:** April 17, 2026
+**Last Updated:** April 21, 2026
 
 ---
 
@@ -50,7 +50,14 @@
 
 ## Blockers
 
-- None currently
+- **Waiting on ClearValue follow-ups** (blocks live sandbox test):
+  - Full POST path under `https://clients.valorvaluations.com`
+  - PDR ProductCode
+  - Correct XML placement for Master Client ID (56135) and Branch ID (1055)
+  - IP allowlist requirement + our PA outbound IPs if yes
+  - Duplicate PartnerReferenceNumber behavior
+  - Inbound delivery retry policy on their side
+  - Fast-complete sandbox product code (to demo full round-trip)
 
 ---
 
@@ -59,6 +66,8 @@
 | Date | Who | Focus | Outcome |
 |------|-----|-------|---------|
 | April 17, 2026 | Sal | Feasibility analysis, project setup, flow generation | Analyzed Acuity framework, created feasibility doc, set up project repo/mirror/GitHub, generated both PA flows (outbound child + inbound standalone) with placeholder Compose actions |
+| April 21, 2026 | Sal | Pre-call live-test tooling for ClearValue meeting | Built stdlib-only Python harness (`tools/acuity_sandbox_test.py` — place-order/dry-run/ping modes), Postman collection + environment (`tools/acuity_sandbox.postman_collection.json`, `acuity_sandbox.postman_environment.json`), interactive step-by-step assistant (`tools/acuity_live_call.py`), and `tools/CALL_CHECKLIST.md`. Dry-run verified XML generation. pip blocked by corp SSL → stdlib-only chosen deliberately. |
+| April 21, 2026 | Sal | ClearValue live call — partial intake, live test deferred | **Captured:** vendor brand is Valor Valuations, sandbox host `https://clients.valorvaluations.com` (full POST path still TBD), Master Client ID 56135, Branch ID 1055, PDC = ProductCode `9`, credentials + RecipientID captured to gitignored `CALL_CHECKLIST.md`. **Routing logic:** LPA or CaseFile presence on the JaroDesk order determines PDR vs PDC. **Outstanding (ClearValue owes answers):** PDR product code, full sandbox POST path, IP allowlist, TLS version, mTLS, rate limits, duplicate PartnerReferenceNumber behavior, inbound retry policy, fast-complete sandbox code. **Not done on call:** live place-order test (step 5) and inbound webhook round-trip (step 6) — both punted until ClearValue confirms missing pieces. Added `tools/CALL_CHECKLIST.md` to `.gitignore` to keep captured creds out of GitHub. Updated `context.md` with Valor branding, host, master client/branch IDs, and PDR/PDC mapping rule. |
 
 ---
 

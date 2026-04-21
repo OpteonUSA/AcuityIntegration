@@ -30,7 +30,8 @@ This automation integrates JaroDesk with Acuity (ClearValue Consulting) to order
 - **Inbound:** HTTP trigger (Acuity POSTs completed report to our endpoint)
 
 ### Target System API
-- **URL:** TBD (sandbox credentials being configured)
+- **Vendor brand:** Valor Valuations (ClearValue Consulting runs the Acuity framework/platform)
+- **Sandbox host:** `https://clients.valorvaluations.com` (full POST path TBD)
 - **Auth:** HTTP Basic Authentication (Base64-encoded username:password)
 - **Protocol:** XML over HTTPS (TLS 1.2)
 - **Framework:** [AcuityExchange Integration Framework](https://providers.clearvalueconsulting.com/AcuityIntegrationFramework.html)
@@ -39,11 +40,21 @@ This automation integrates JaroDesk with Acuity (ClearValue Consulting) to order
 ### Key IDs
 | Setting | Dev (Sandbox) | Prod |
 |---------|---------------|------|
-| Base URL | TBD | TBD |
+| Base URL | `https://clients.valorvaluations.com` (path TBD) | TBD |
+| Master Client ID | 56135 | TBD |
+| Branch ID | 1055 | TBD |
 | SenderID | TBD | TBD |
-| RecipientID | TBD | TBD |
-| Username | (env var) | (env var) |
-| Password | (env var) | (env var) |
+| RecipientID | captured (see `tools/CALL_CHECKLIST.md` — gitignored) | TBD |
+| Username | captured (env var) | (env var) |
+| Password | captured (env var) | (env var) |
+
+### Product Code Mapping (Valor)
+| Product | Acuity ProductCode | Prerequisite |
+|---------|--------------------|--------------|
+| PDC | `9` | (none confirmed) |
+| PDR | TBD (pending from ClearValue) | Requires CaseFile **or** LPA findings to be attached/referenced |
+
+**Routing rule:** `LPA or CaseFile` presence on the JaroDesk order drives PDR selection; absence = PDC. Encode this in the router upstream so this flow only receives the already-resolved product code.
 
 ### Data Mapping: JaroDesk to Acuity
 
