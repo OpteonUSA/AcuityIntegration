@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acuity / Valor Integration — Scope Tier Analysis</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --success: #16a34a;
+            --success-light: #dcfce7;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --danger: #dc2626;
+            --danger-light: #fee2e2;
+            --purple: #7c3aed;
+            --purple-light: #ede9fe;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: var(--gray-50);
+            padding: 2rem;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            color: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .header h1 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+        .header .subtitle { opacity: 0.9; font-size: 1rem; }
+        .header .date { opacity: 0.7; font-size: 0.85rem; margin-top: 0.75rem; }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .badge-mvp { background: var(--success-light); color: var(--success); }
+        .badge-standard { background: var(--primary-light); color: var(--primary); }
+        .badge-workflow { background: var(--warning-light); color: var(--warning); }
+        .badge-advanced { background: var(--purple-light); color: var(--purple); }
+        .badge-hardening { background: var(--gray-100); color: var(--gray-700); }
+        .badge-blocked { background: var(--danger-light); color: var(--danger); }
+
+        .tldr {
+            background: white;
+            border: 2px solid var(--success);
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+        }
+        .tldr h2 { color: var(--success); font-size: 1.1rem; margin-bottom: 0.75rem; }
+        .tldr ul { list-style: none; padding: 0; }
+        .tldr li {
+            padding: 0.4rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .tldr li::before {
+            content: "\2713";
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--gray-200);
+        }
+        .section h2 {
+            font-size: 1.2rem;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--gray-100);
+        }
+        .section h3 {
+            font-size: 1rem;
+            color: var(--gray-700);
+            margin: 1.25rem 0 0.5rem 0;
+        }
+        .section p { margin-bottom: 0.75rem; }
+        .section ul, .section ol { margin: 0.5rem 0 0.75rem 1.5rem; }
+        .section li { margin-bottom: 0.4rem; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.75rem 0;
+            font-size: 0.88rem;
+        }
+        th {
+            background: var(--gray-100);
+            padding: 0.6rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--gray-700);
+            border-bottom: 2px solid var(--gray-200);
+        }
+        td {
+            padding: 0.55rem 0.75rem;
+            border-bottom: 1px solid var(--gray-100);
+            vertical-align: top;
+        }
+        tr:hover { background: var(--gray-50); }
+
+        td.col-tier { font-weight: 600; white-space: nowrap; }
+        td.col-effort { font-weight: 600; color: var(--primary); white-space: nowrap; }
+        td.col-elapsed { color: var(--gray-700); white-space: nowrap; }
+        td.col-design-yes { color: var(--warning); font-weight: 600; }
+        td.col-design-heavy { color: var(--danger); font-weight: 600; }
+        td.col-design-no { color: var(--success); }
+
+        .callout {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border-left: 4px solid;
+        }
+        .callout-info { background: var(--primary-light); border-color: var(--primary); }
+        .callout-warning { background: var(--warning-light); border-color: var(--warning); }
+        .callout-success { background: var(--success-light); border-color: var(--success); }
+        .callout-danger { background: var(--danger-light); border-color: var(--danger); }
+        .callout strong { display: block; margin-bottom: 0.25rem; }
+
+        code {
+            background: var(--gray-100);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .phase-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+        .phase-card.phase-2 { border-left-color: var(--warning); }
+        .phase-card.phase-3 { border-left-color: var(--purple); }
+        .phase-card h3 { margin-top: 0; color: var(--gray-900); font-size: 1rem; }
+        .phase-card p { font-size: 0.9rem; margin: 0.5rem 0; }
+        .phase-card .timing {
+            display: inline-block;
+            background: var(--gray-100);
+            padding: 0.15rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-right: 0.5rem;
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--gray-600);
+            font-size: 0.8rem;
+            padding: 1.5rem 0 0.5rem 0;
+        }
+
+        @media print {
+            body { background: white; padding: 0.5rem; }
+            .container { max-width: 100%; }
+            .header { break-inside: avoid; }
+            .section, .tldr, .phase-card { break-inside: avoid; box-shadow: none; }
+            table { font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="header">
+            <h1>Acuity / Valor Integration — Scope Tier Analysis</h1>
+            <div class="subtitle">Reference document for stakeholder scope-decision meeting</div>
+            <div class="date">Prepared: May 4, 2026  |  Updated: May 4, 2026 (post-success Postman test)  |  Owner: Sal Vacanti  |  Project: AcuityIntegration (under AlternativeProductsRouter solution)</div>
+        </div>
+
+        <!-- TL;DR -->
+        <div class="tldr">
+            <h2>Bottom Line for the Meeting</h2>
+            <ul>
+                <li><strong>Tier 1 outbound (AcuityOrder placement) is wire-validated end-to-end against Valor's sandbox as of May 4.</strong> Test order accepted with <code>Success=true</code>, Valor returned <code>ProviderReferenceNumber=1098324.1</code>. The earlier 3003 block was a wrong SenderID value (now <code>OPTEONAMC</code>); MasterClientID/BranchID are <em>not</em> wire fields.</li>
+                <li><strong>Tier 1 inbound (AcuityReport receipt) still has a placeholder JaroDesk upload</strong> — wiring is straightforward (proven 3-step Uppy.js pattern from Magellan AVM Child) but not done.</li>
+                <li><strong>Code complexity is bounded; the real complexity is business workflow design.</strong> Every tier from 3 onward needs ops/finance to define "who decides what" before code can be designed.</li>
+                <li><strong>Phased delivery makes sense.</strong> Phase 1 (Tier 1+2+10) ships in ~3 weeks with no business decisions needed; Phase 2 (Tier 3+5) adds operational features in 6&ndash;8 more weeks; Phase 3 is open-ended roadmap.</li>
+                <li><strong>Three meeting decision points:</strong> urgency of Tier 1 go-live; where the "good enough" line sits; who owns the Phase 2/3 workflow design conversations.</li>
+            </ul>
+        </div>
+
+        <!-- Current State -->
+        <div class="section">
+            <h2>What's Actually Built Today</h2>
+            <p>Honest assessment of the current state &mdash; what looks done is not all the way done:</p>
+            <table>
+                <thead>
+                    <tr><th>Component</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Place Order (AcuityOrder)</strong></td>
+                        <td><span class="badge badge-mvp">Wire-validated end-to-end May 4</span> via Postman against Valor sandbox. Returned <code>Success=true</code> with <code>ProviderReferenceNumber=1098324.1</code>. PA generator still has 6 missing required schema elements and uses a placeholder POST &mdash; needs to be brought up to the schema-correct XML body proven in the harness.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cancel Order (AcuityCancellation)</strong></td>
+                        <td>Postman stub only. Not in PA generator. Not tested. Tier 3 work.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Get Report inbound (AcuityReport)</strong></td>
+                        <td>HTTP trigger receives + parses XML, but JaroDesk upload is a placeholder &mdash; no signed URL &rarr; S3 &rarr; tag &rarr; deliver pipeline yet. Inbound URL also still needs to be handed to Valor.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="callout callout-success">
+                <strong>Status update from May 4 afternoon:</strong>
+                Tier 1 outbound is now wire-validated against Valor's sandbox &mdash; the 3003 block is resolved (correct SenderID is <code>OPTEONAMC</code>) and MasterClientID/BranchID are confirmed NOT to be on-the-wire fields. Remaining Tier 1 work is purely engineering: bring the PA generator's Acuity Outbound Child up to the schema-correct XML body the harness proves; replace the inbound JaroDesk-upload placeholder with the proven Uppy.js 3-step pattern; hand Valor the inbound HTTP-trigger URL.
+            </div>
+        </div>
+
+        <!-- Tier Ladder -->
+        <div class="section">
+            <h2>Full Acuity Protocol &mdash; Scope Tier Ladder</h2>
+            <p>The Acuity 6.4.0 framework defines 30 distinct message types. Grouped into shippable tiers, with the unit of effort being a focused PA development session (~4 hours of concentrated work). Numbers assume design questions are answered upfront.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tier</th>
+                        <th>Scope</th>
+                        <th>Acuity Message Types</th>
+                        <th>Code Effort</th>
+                        <th>Business Design Needed</th>
+                        <th>Realistic Elapsed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-mvp">Tier 1</span><br>MVP</td>
+                        <td><strong>Order + Report</strong></td>
+                        <td><code>AcuityOrder</code>, <code>AcuityAcknowledgement</code>, <code>AcuityReport</code></td>
+                        <td class="col-effort">1 session</td>
+                        <td class="col-design-no">None</td>
+                        <td class="col-elapsed">1&ndash;2 weeks<br><small>(Valor sandbox cycles)</small></td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-standard">Tier 2</span><br>Visibility</td>
+                        <td><strong>Status updates</strong></td>
+                        <td><code>AcuityOrderAcceptance</code>, <code>AcuityAssignment</code>, <code>AcuityInspectionComplete</code>, <code>AcuityDelay</code>, <code>AcuityGeneralStatusUpdate</code></td>
+                        <td class="col-effort">1 session<br>(batched)</td>
+                        <td class="col-design-no">None &mdash; just "post note + Teams" per type</td>
+                        <td class="col-elapsed">+3 days</td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-workflow">Tier 3</span><br>Cancellation</td>
+                        <td><strong>Cancellation lifecycle</strong></td>
+                        <td><code>AcuityCancellation</code> (out), <code>AcuityCancellationAcceptance</code> + <code>AcuityCancellationRejection</code> (in)</td>
+                        <td class="col-effort">1&ndash;2 sessions</td>
+                        <td class="col-design-yes">YES &mdash; what triggers cancel from Opteon? UI button / tag / API?</td>
+                        <td class="col-elapsed">+1&ndash;2 weeks</td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-workflow">Tier 4</span><br>Revisions</td>
+                        <td><strong>Revision workflow</strong></td>
+                        <td><code>AcuityRevisionRequest</code> (in), <code>AcuityRevisionAcceptance</code>/<code>Rejection</code> (out), <code>AcuityResume</code>, <code>AcuityUpgrade</code></td>
+                        <td class="col-effort">3&ndash;4 sessions</td>
+                        <td class="col-design-heavy">YES, heavy &mdash; reviewer queue location + approval thresholds</td>
+                        <td class="col-elapsed">+3&ndash;4 weeks</td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-workflow">Tier 5</span><br>Fees</td>
+                        <td><strong>Fee approval workflow</strong></td>
+                        <td><code>AcuityFeeRequest</code> (in), <code>AcuityFeeApproval</code> (out)</td>
+                        <td class="col-effort">2&ndash;3 sessions</td>
+                        <td class="col-design-heavy">YES, heavy &mdash; approver, $ thresholds, CFO sign-off rules</td>
+                        <td class="col-elapsed">+2&ndash;3 weeks</td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-workflow">Tier 6</span><br>Scheduling</td>
+                        <td><strong>Due date / appointment management</strong></td>
+                        <td><code>AcuityDueDateApproval</code>/<code>Revision</code>, <code>AcuityInspectionAppointment</code>, <code>AcuityInspectionConfirmed</code></td>
+                        <td class="col-effort">2&ndash;3 sessions</td>
+                        <td class="col-design-yes">YES &mdash; auto-accept due dates or negotiate?</td>
+                        <td class="col-elapsed">+2&ndash;3 weeks</td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-advanced">Tier 7</span><br>QC</td>
+                        <td><strong>QC workflow</strong></td>
+                        <td><code>AcuityQCCommentary</code>, <code>AcuityQCResponse</code>, <code>AcuityQCUpdate</code></td>
+                        <td class="col-effort">1&ndash;2 sessions</td>
+                        <td class="col-design-yes">Possibly &mdash; integration with existing QC tooling</td>
+                        <td class="col-elapsed">+1 week</td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-advanced">Tier 8</span><br>UAD</td>
+                        <td><strong>UAD compliance</strong></td>
+                        <td><code>AcuityUADOverrideRequest</code>, <code>AcuityUADPreliminaryFindings</code>, <code>AcuityUADSubmissionFindings</code>, <code>AcuityUADUnresolvedIssues</code></td>
+                        <td class="col-effort">2&ndash;3 sessions</td>
+                        <td class="col-design-heavy">YES &mdash; UAD findings need underwriting/lender stakeholder mapping</td>
+                        <td class="col-elapsed">+2&ndash;3 weeks</td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-advanced">Tier 9</span><br>Edge cases</td>
+                        <td><strong>Order management edge cases</strong></td>
+                        <td><code>AcuityOrderUpdate</code>, <code>AcuityOrderStatusRequest</code>, <code>AcuityComment</code>, <code>AcuityPayment</code>, <code>AcuityBulkOrder</code>, <code>AcuityBorrowerCorrespondence</code>, <code>AcuityMailing</code></td>
+                        <td class="col-effort">~0.5 session each</td>
+                        <td class="col-design-yes">Mixed</td>
+                        <td class="col-elapsed">+2&ndash;3 weeks total</td>
+                    </tr>
+                    <tr>
+                        <td class="col-tier"><span class="badge badge-hardening">Tier 10</span><br>Hardening</td>
+                        <td><strong>Production hardening (parallel track)</strong></td>
+                        <td>SenderID validation, multi-shape error coalesce, large-document handling, order-mapping table</td>
+                        <td class="col-effort">1 session</td>
+                        <td class="col-design-no">None</td>
+                        <td class="col-elapsed">+1 week</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="callout callout-info">
+                <strong>Comparison to Place Order + Cancel Order baseline:</strong>
+                What we've constructed so far covers Tier 1 outbound (Place Order) and a stub of Tier 3 outbound (Cancel Order). Cancel Order in Postman is just XML &mdash; not wired to PA, not tested, no inbound counterparts. Going from current state to a full integration means an additional <strong>~25 dev sessions plus 4&ndash;6 months of elapsed time</strong> assuming the workflow design conversations happen in parallel rather than sequentially.
+            </div>
+        </div>
+
+        <!-- Cumulative Scenarios -->
+        <div class="section">
+            <h2>Cumulative Effort by Scope Choice</h2>
+            <p>If tiers ship sequentially &mdash; with a stakeholder review checkpoint between each &mdash; here's the cumulative picture:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Scope Choice</th>
+                        <th>Tiers Included</th>
+                        <th>Code Sessions</th>
+                        <th>Realistic Elapsed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Tier 1 only</strong> &mdash; current MVP target</td>
+                        <td>Tier 1</td>
+                        <td class="col-effort">1 session</td>
+                        <td class="col-elapsed">1&ndash;2 weeks from today<br><small>(outbound proven; remaining: PA generator + inbound upload + handoff URL to Valor)</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>"Smart MVP"</strong> &mdash; live + visibility + hardened</td>
+                        <td>Tier 1 + 2 + 10</td>
+                        <td class="col-effort">3 sessions</td>
+                        <td class="col-elapsed">3&ndash;4 weeks<br><small>(no new business decisions)</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>"Operational MVP"</strong> &mdash; adds cancellation</td>
+                        <td>Tier 1 + 2 + 3 + 10</td>
+                        <td class="col-effort">5 sessions</td>
+                        <td class="col-elapsed">5&ndash;6 weeks<br><small>(one design conversation)</small></td>
+                    </tr>
+                    <tr>
+                        <td><strong>"Operational + Financial"</strong></td>
+                        <td>Through Tier 6</td>
+                        <td class="col-effort">14 sessions</td>
+                        <td class="col-elapsed">10&ndash;14 weeks</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Full integration</strong></td>
+                        <td>All 10 tiers</td>
+                        <td class="col-effort">~25 sessions</td>
+                        <td class="col-elapsed">4&ndash;6 months</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Non-obvious Complexity -->
+        <div class="section">
+            <h2>The Non-Obvious Complexity</h2>
+            <p>The technical code work is the easy part. <strong>Each tier from 3 onward has a business workflow design problem attached</strong> that must be answered before the code can be designed:</p>
+            <ul>
+                <li><strong>Tier 4 (revisions):</strong> If Valor sends a revision request, who in Opteon sees it? In JaroDesk? In a Power App? In a Teams channel? Until ops answers this, the technical wiring can't be designed.</li>
+                <li><strong>Tier 5 (fee approval):</strong> Who has authority to approve a $50 fee bump? A $500 fee bump? Are there auto-approve thresholds?</li>
+                <li><strong>Tier 6 (due date negotiation):</strong> Does Opteon push back when Valor proposes a date, or always accept?</li>
+                <li><strong>Tier 8 (UAD compliance):</strong> UAD findings probably need to roll up to underwriting / lender; who owns that mapping?</li>
+            </ul>
+            <div class="callout callout-warning">
+                <strong>Plan accordingly:</strong>
+                These workflow design conversations historically take longer than the code itself. Budget 1&ndash;2 weeks of meeting cycles per tier just for design alignment, separate from build time.
+            </div>
+        </div>
+
+        <!-- Recommended Phasing -->
+        <div class="section">
+            <h2>Recommended Phased Delivery</h2>
+            <p>Concrete phases to propose to stakeholders. Each phase is independently shippable and gives clear value before the next phase starts.</p>
+
+            <div class="phase-card">
+                <h3>Phase 1 &mdash; Live Integration <span class="timing">~4 weeks</span></h3>
+                <p><strong>Tiers 1 + 2 + 10.</strong> Live order placement (PDC and PDR via single ProductCode + LPA Key/CaseFile), automated report receipt back into JaroDesk, status updates visible in JaroDesk notes + Teams, hardened against the known production gotchas (multi-shape error coalesce, SenderID validation, retry policies).</p>
+                <p><strong>Decisions needed:</strong> none beyond what we already have. Independent of any business workflow design.</p>
+            </div>
+
+            <div class="phase-card phase-2">
+                <h3>Phase 2 &mdash; Operational + Financial <span class="timing">+6&ndash;8 weeks</span></h3>
+                <p><strong>Tiers 3 + 5.</strong> Adds Opteon-initiated cancellation lifecycle and fee adjustment approval workflow. These are the two most-frequently-used post-MVP features in similar AMC integrations.</p>
+                <p><strong>Decisions needed:</strong> two design conversations &mdash; cancellation trigger mechanism and fee approval thresholds/authority.</p>
+            </div>
+
+            <div class="phase-card phase-3">
+                <h3>Phase 3 &mdash; Roadmap Items <span class="timing">Open-ended</span></h3>
+                <p><strong>Tiers 4, 6, 7, 8, 9.</strong> Revisions, due date negotiation, QC, UAD compliance, edge-case message types. Each has its own design dependency and stakeholder owner.</p>
+                <p><strong>Decisions needed:</strong> a workflow design conversation per tier, scoped individually.</p>
+            </div>
+        </div>
+
+        <!-- Decision Points -->
+        <div class="section">
+            <h2>Three Decision Points to Surface in the Meeting</h2>
+            <ol>
+                <li><strong>How urgent is going live with Tier 1?</strong> If urgent, Phase 1 ships in ~4 weeks and Phase 2 follows. If not urgent, the broader scope can be planned together.</li>
+                <li><strong>Where's the "good enough" line?</strong> Tier 1 = "we can place orders and get reports." Tier 2 = visibility but no new functional features. Tier 3+ = operational features. Where do we declare the integration complete?</li>
+                <li><strong>Who owns the workflow design conversations for Phase 2 and Phase 3?</strong> If those owners aren't identified now, those tiers don't move regardless of dev capacity. The bottleneck will be people, not code.</li>
+            </ol>
+        </div>
+
+        <!-- Open Items / Dependencies -->
+        <div class="section">
+            <h2>Open Items Outside Opteon's Control</h2>
+            <table>
+                <thead>
+                    <tr><th>Item</th><th>Owner</th><th>Blocks</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Inbound HTTP-trigger URL (PA's Acuity Inbound flow URL) handed to Valor for posting status updates and AcuityReport back to Opteon</td>
+                        <td>Sal &rarr; ClearValue / Valor</td>
+                        <td>Tier 1 inbound</td>
+                    </tr>
+                    <tr>
+                        <td>JaroDesk-side source for LPA Key / CaseFile ID (loan field, custom field, or attachment metadata)</td>
+                        <td>Opteon ops / JaroDesk admin</td>
+                        <td>Tier 1 PDR routing</td>
+                    </tr>
+                    <tr>
+                        <td>Workflow design for Tier 3 (cancellation trigger)</td>
+                        <td>Opteon ops</td>
+                        <td>Phase 2</td>
+                    </tr>
+                    <tr>
+                        <td>Workflow design for Tier 5 (fee approval thresholds + authority)</td>
+                        <td>Opteon ops + finance</td>
+                        <td>Phase 2</td>
+                    </tr>
+                    <tr>
+                        <td>Workflow design for Tiers 4, 6, 7, 8 (per-tier owners TBD)</td>
+                        <td>Opteon ops + relevant business areas</td>
+                        <td>Phase 3</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            Source: <code>C:\Repos\AcuityIntegration\integration-scope-tiers.html</code><br>
+            Companion technical detail: <code>memory-bank/10-progress.md</code>, <code>context.md</code>, <code>feasibility-analysis.html</code>
+        </div>
+
+    </div>
+</body>
+</html>

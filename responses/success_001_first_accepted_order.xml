@@ -1,0 +1,44 @@
+<!--
+  Captured: 2026-05-04 ~16:27 ET
+  Trigger:  Postman retest after Valor confirmed correct SenderID = OPTEONAMC
+  Endpoint: https://clients.valorvaluations.com/adapters/Integration/Acuity
+  Auth:     HTTP Basic + SenderID=OPTEONAMC (was OPTEON, which produced 3003)
+  PartnerReferenceNumber: OPTEON-TEST-POSTMAN-001
+  ProviderReferenceNumber: 1098324.1 (Valor's internal order ID)
+
+  Outcome:  HTTP 200, Success=true. Tier 1 outbound (AcuityOrder placement)
+  is now wire-validated end-to-end against Valor's sandbox. SenderID was
+  the entire 3003 root cause — MasterClientID 56135 / BranchID 1055 are
+  NOT needed in the XML; they're Valor-side account identifiers tied to
+  the Basic Auth + SenderID combination, exactly as originally hypothesized
+  before being challenged by the 3003.
+
+  Side observations from this response:
+  - Valor echoed our PartnerReferenceNumber unchanged (OPTEON-TEST-POSTMAN-001),
+    confirming we can use it as the cross-system tracking key.
+  - Valor accepted the same PartnerReferenceNumber that produced 3003 earlier
+    — duplicate PartnerReferenceNumber is NOT rejected in the sandbox. Open
+    question for production behavior.
+  - ProviderReferenceNumber 1098324.1 has a decimal — likely orderID.lineItemNumber
+    composite. We sent LineItemNumber=1.
+
+  Next steps unblocked:
+  - Tell Valor our inbound HTTP-trigger URL so they can POST status updates +
+    AcuityReport back to us.
+  - Replace PA generator's Acuity Outbound Child placeholder POST with the
+    schema-correct XML body proven here; bring it up to schema compliance
+    (6 missing required elements per AcuityOrder.xsd).
+  - Replace PA inbound flow's JaroDesk-upload placeholder with the real
+    3-step Uppy.js upload + tag + deliver pipeline.
+  - Update Dataverse cre4a_apicredentialses: cre4a_apikey from "OPTEON" to
+    "OPTEONAMC" (already done by Sal as part of this retest).
+-->
+<?xml version="1.0" encoding="utf-8"?>
+<AcuityAcknowledgement xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <MessageDate>2026-05-04T16:27:47.3026581-04:00</MessageDate>
+    <PartnerReferenceNumber>OPTEON-TEST-POSTMAN-001</PartnerReferenceNumber>
+    <ProviderReferenceNumber>1098324.1</ProviderReferenceNumber>
+    <LineItemNumber>1</LineItemNumber>
+    <Success>true</Success>
+    <Addenda />
+</AcuityAcknowledgement>

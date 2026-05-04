@@ -47,10 +47,14 @@ This automation integrates JaroDesk with Acuity (ClearValue Consulting) to order
 | Outbound POST URL | `https://clients.valorvaluations.com/adapters/Integration/Acuity` | TBD |
 | Master Client ID | 56135 (Valor-side account ID — see note below) | TBD |
 | Branch ID | 1055 (Valor-side account ID — see note below) | TBD |
-| SenderID (us → Valor) | TBD (captured in checklist) | TBD |
+| SenderID (us → Valor) | **`OPTEONAMC`** (confirmed by Valor 2026-05-04; supersedes earlier `OPTEON`) | TBD |
 | RecipientID (us → Valor) | "VALOR" works; specific Valor RecipientID captured in checklist | TBD |
 
-**Note on MasterClientID + BranchID placement (verified May 4, 2026 against the public 6.4.0 schema package at `https://providers.clearvalueconsulting.com/artifacts/6.4.0.zip`):**
+**Note on MasterClientID + BranchID placement (RESOLVED 2026-05-04):**
+
+These values **do not need to be on the wire**. They are Valor-side account identifiers tied to the Basic Auth + SenderID combination. Confirmed by a successful end-to-end test on 2026-05-04: with `senderId=OPTEONAMC` and Basic Auth alone, Valor accepted the AcuityOrder and returned `Success=true` + `ProviderReferenceNumber=1098324.1`. Original hypothesis pre-3003 was correct; the 3003 was driven by the wrong SenderID value, not a missing MasterClient/Branch field.
+
+**Verified May 4, 2026 against the public 6.4.0 schema package at `https://providers.clearvalueconsulting.com/artifacts/6.4.0.zip`:**
 
 `MasterClientID` and `BranchID` **do not exist as elements anywhere in the AcuityOrder XSD or any other 6.4.0 message schema.** Full element list of `<AcuityOrder>` is captured below. The closest available fields are:
 
