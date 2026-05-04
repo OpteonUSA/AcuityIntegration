@@ -65,8 +65,9 @@
 - ✅ Generic RecipientID "VALOR" is acceptable when sending us → Valor.
 
 **Still outstanding (blocks Tier 1 ship):**
-- ⚠️ **PDR ProductCode** — still TBD; ClearValue owes us this. PDC=9 is confirmed; PDR can't be wired until ClearValue confirms.
-- ⚠️ **MasterClientID (56135) and BranchID (1055) XML placement** — confirmed needed but exact element path not provided. Likely `<MasterClientID>` and `<BranchID>` within `<AcuityOrder>` per the framework spec; verify against XSD before shipping.
+- ✅ **PDR ProductCode** — RESOLVED 2026-05-04 (Sal follow-up): there is no separate PDR ProductCode. ProductCode is always `9` for both PDR and PDC. Differentiator is the LPA Key (`FreddieMacLPAKey`) or CaseFile ID (`FannieMaeCaseFileID`) carried in `<ForeignOrderIdentifier>` on the AcuityOrder XML. Empty = PDC behavior; populated = PDR behavior. This fits cleanly into the existing 6.4.0 schema (no custom extension). Source of LPA Key / CaseFile ID on JaroDesk-side TBD — confirm during stakeholder review.
+- ⚠️ **3003 "client profile cannot be determined"** — first live POST May 4 returned this. Awaiting Valor's response on whether (a) `OPTEON` is the wrong SenderID value, (b) MasterClientID 56135 / BranchID 1055 need to be on the wire and where, or (c) account-side provisioning issue. Schema-validation is now passing — this is a business-layer block, not a wire-format block.
+- ⚠️ **MasterClientID (56135) and BranchID (1055) XML placement** — `ForeignOrderIdentifier` is now ruled out (it's reserved for GSE/FHA/Fannie/Freddie loan-tracking IDs per the enum, and its primary use is now confirmed to be the PDR/PDC differentiator). Remaining candidates: `OperationalTag1/2`, `CostCenter`, `InvestorCode`, `BatchName` — or possibly nothing at all if Basic Auth alone identifies the account on Valor's side. Bundled into the consolidated Valor email already sent.
 - ⚠️ **Duplicate PartnerReferenceNumber behavior** — still unanswered. Affects retry semantics on connection-level failures.
 - ⚠️ **Fast-complete sandbox code** — not provided; needed to demo a full round-trip without waiting for a real inspector.
 

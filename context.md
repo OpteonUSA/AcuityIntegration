@@ -69,11 +69,33 @@ This automation integrates JaroDesk with Acuity (ClearValue Consulting) to order
 | Username | captured (env var) | (env var) |
 | Password | captured (env var) | (env var) |
 
-### Product Code Mapping (Valor)
-| Product | Acuity ProductCode | Prerequisite |
-|---------|--------------------|--------------|
-| PDC | `9` | (none confirmed) |
-| PDR | **STILL TBD** (pending from ClearValue as of May 4) | Requires CaseFile **or** LPA findings to be attached/referenced |
+### Product Code (Valor) — Single ProductCode model
+
+**Confirmed by ClearValue/Valor 2026-05-04:** there is **only one ProductCode** for both PDR and PDC. The differentiator is the LPA Key (Freddie Mac) or CaseFile ID (Fannie Mae) carried in the order — Valor inspects those identifiers to decide whether the work is a PDR (full data report against the GSE submission) or a PDC (collection only).
+
+| Product | Acuity ProductCode | How Valor knows it's this product |
+|---------|--------------------|----------------------------------|
+| PDC | `9` | LPA Key / CaseFile ID **absent** |
+| PDR | `9` (same) | LPA Key (`FreddieMacLPAKey`) or CaseFile ID (`FannieMaeCaseFileID`) **present** in the order |
+
+**Wire placement for the differentiator** — `ForeignOrderIdentifier` element on `AcuityOrder`. Per the 6.4.0 XSD (`AcuityOrder.xsd` lines 247-256), `ForeignOrderIdentifier.Type` is an `AlternateIDType` enum with exactly these values:
+- `GSEDocFileID`
+- `FHADocFileID`
+- `FannieMaeCaseFileID`
+- `FannieMaePropertyDataID`
+- `FreddieMacLPAKey`
+
+Element is repeating (`maxOccurs="unbounded"`), so an order can carry multiple. Example for PDR:
+```xml
+<ForeignOrderIdentifier ID="LPA-12345-ABCDEF" Type="FreddieMacLPAKey" />
+```
+Empty/absent = Valor defaults to PDC behavior.
+
+**Implication for Acuity Outbound Child design:**
+- The flow does NOT need to lookup different ProductCodes per routing key. Always send `9`.
+- The flow DOES need to thread JaroDesk's LPA Key and/or CaseFile ID into the AcuityOrder XML when present.
+- The router's `pdr` vs `pdc` routing keys still serve a purpose — they document which JaroDesk product was ordered — but downstream of the Acuity child the only behavioral difference is whether to emit `ForeignOrderIdentifier`.
+- Source of LPA Key / CaseFile ID on JaroDesk side: TBD. Likely `loan_number`, custom fields, or attachments. Confirm with stakeholders during the meeting where PDR routing rule was set.
 
 **Routing rule:** `LPA or CaseFile` presence on the JaroDesk order drives PDR selection; absence = PDC. Encode this in the router upstream so this flow only receives the already-resolved product code.
 
