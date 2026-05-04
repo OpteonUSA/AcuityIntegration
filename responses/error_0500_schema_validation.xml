@@ -1,0 +1,21 @@
+<!--
+  Captured: 2026-05-04 (ClearValue/Valor follow-up answers)
+  Trigger:  Test order with PropertyType = "fakepropertytype" (deliberately invalid enum)
+  Shape:    Top-level <Error> — NOT wrapped in <AcuityAcknowledgement>
+
+  Confirms two distinct error shapes in the Acuity protocol:
+    1. Schema/instance validation failure -> top-level <Error> (this sample)
+    2. Auth failure -> HTTP 401 (body shape unspecified)
+    3. Business-logic failure inside an accepted envelope -> assumed
+       <AcuityAcknowledgement><Error>...</Error></AcuityAcknowledgement>
+       (NOT yet confirmed live)
+
+  Implication: outbound child response parser must probe BOTH shapes via
+  coalesce + string(...) fallback. Pattern reference: Magellan AVM Child
+  v1.0.0.33 in AlternativeProductsRouter (Compose_-_Magellan_Error_Code /
+  Compose_-_Magellan_Error_Message). Apply the same approach here.
+-->
+<Error>
+    <ErrorCode>0500</ErrorCode>
+    <ErrorMessage>Instance validation error: 'fakepropertytype' is not a valid value for AcuityPropertyType.</ErrorMessage>
+</Error>

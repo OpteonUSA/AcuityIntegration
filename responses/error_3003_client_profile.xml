@@ -1,0 +1,42 @@
+<!--
+  Captured: 2026-05-04 ~13:19 ET
+  Trigger:  First real sandbox POST from Postman with schema-correct XML
+  Endpoint: https://clients.valorvaluations.com/adapters/Integration/Acuity
+  Auth:     HTTP Basic with creds + SenderID=OPTEON from Dataverse APICredentials
+  PartnerReferenceNumber: OPTEON-TEST-POSTMAN-001
+
+  Outcome:  HTTP 200 (auth + schema validation passed) but business-level
+  rejection. Confirms the AcuityAcknowledgement.Error.{ErrorCode, ErrorMessage}
+  envelope shape (distinct from the top-level <Error> shape we saw in the
+  earlier 0500 schema-validation sample). Both shapes need handling in any
+  parser — see feedback_surface_literal_api_errors shared lesson.
+
+  Open question: error 3003 "client profile cannot be determined" — caused by
+  either:
+    (a) SenderID value "OPTEON" doesn't match how Valor has Opteon registered
+        (might need a Valor-specific account ID, not the brand name)
+    (b) MasterClientID 56135 / BranchID 1055 must be carried in the XML in
+        some element we haven't identified (ForeignOrderIdentifier is ruled
+        out — its Type attribute is enum-restricted to GSE/FHA loan IDs).
+        Remaining candidates: OperationalTag1/2, CostCenter, InvestorCode,
+        BatchName (all xs:string).
+    (c) Backend account configuration issue on Valor's side (not a wire-format
+        problem at all).
+
+  Open question for Valor follow-up: send this exact PartnerReferenceNumber
+  + ErrorCode 3003 with the question: "What does the client profile lookup
+  key off of, and where in the AcuityOrder XML should we provide MasterClientID
+  56135 / BranchID 1055?"
+-->
+<?xml version="1.0" encoding="utf-8"?>
+<AcuityAcknowledgement xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <MessageDate>2026-05-04T13:19:41.7251848-04:00</MessageDate>
+    <PartnerReferenceNumber>OPTEON-TEST-POSTMAN-001</PartnerReferenceNumber>
+    <LineItemNumber>1</LineItemNumber>
+    <Success>false</Success>
+    <Error>
+        <ErrorCode>3003</ErrorCode>
+        <ErrorMessage>The client profile associated with this order cannot be determined</ErrorMessage>
+    </Error>
+    <Addenda />
+</AcuityAcknowledgement>

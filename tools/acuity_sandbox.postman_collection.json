@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Acuity Sandbox (ClearValue)",
-    "description": "Live-test harness for Acuity/ClearValue integration. Fill in the 'Acuity Sandbox' environment with values from ClearValue before running.",
+    "name": "Acuity Sandbox (Valor / ClearValue)",
+    "description": "Live-test harness for the Acuity/Valor integration. Body XML rebuilt 2026-05-04 against the actual 6.4.0 XSD package (https://providers.clearvalueconsulting.com/artifacts/6.4.0.zip). Fill in the 'Acuity Sandbox' environment with values from the gitignored CALL_CHECKLIST.md before running.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -25,7 +25,7 @@
         "url": { "raw": "{{baseUrl}}", "host": ["{{baseUrl}}"] },
         "body": {
           "mode": "raw",
-          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<AcuityOrder xmlns=\"http://www.acuityexchange.com/schemas/v6.4.0\" SchemaVersion=\"6.4.0\">\n  <MessageHeader>\n    <MessageID>{{$guid}}</MessageID>\n    <SentDateTime>{{$isoTimestamp}}</SentDateTime>\n    <SenderID>{{senderId}}</SenderID>\n    <RecipientID>{{recipientId}}</RecipientID>\n  </MessageHeader>\n  <OrderDetails>\n    <PartnerReferenceNumber>{{partnerRef}}</PartnerReferenceNumber>\n    <ProductCode>{{productCode}}</ProductCode>\n  </OrderDetails>\n  <Loan>\n    <LoanNumber>TEST-LOAN-001</LoanNumber>\n    <LoanType>Conventional</LoanType>\n    <LoanPurpose>Purchase</LoanPurpose>\n  </Loan>\n  <SubjectProperty>\n    <Address1>123 Test St</Address1>\n    <City>Columbus</City>\n    <State>OH</State>\n    <PostalCode>43215</PostalCode>\n    <PropertyType>SingleFamily</PropertyType>\n    <SalesPrice>450000</SalesPrice>\n  </SubjectProperty>\n  <Contacts>\n    <Contact ContactType=\"Borrower\">\n      <FirstName>Test</FirstName>\n      <LastName>Borrower</LastName>\n      <DaytimePhone>6145551234</DaytimePhone>\n    </Contact>\n  </Contacts>\n</AcuityOrder>"
+          "raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<AcuityOrder xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n  <SenderID>{{senderId}}</SenderID>\n  <RecipientID>{{recipientId}}</RecipientID>\n  <MessageDate>{{$isoTimestamp}}</MessageDate>\n  <System>Acuity</System>\n  <MessageVersion>6.4</MessageVersion>\n  <PartnerReferenceNumber>{{partnerRef}}</PartnerReferenceNumber>\n  <LineItemNumber>1</LineItemNumber>\n  <ProductCode>{{productCode}}</ProductCode>\n  <ConditionalAcceptanceAllowed>false</ConditionalAcceptanceAllowed>\n  <BillingType>Invoice</BillingType>\n  <Loan>\n    <LoanType>Conventional</LoanType>\n    <LoanPurpose>Purchase</LoanPurpose>\n    <LoanNumber>TEST-LOAN-001</LoanNumber>\n  </Loan>\n  <SubjectProperty>\n    <Address1>123 Test St</Address1>\n    <City>Columbus</City>\n    <State>OH</State>\n    <PostalCode>43215</PostalCode>\n    <SalesPrice>450000</SalesPrice>\n    <PropertyType>SingleFamilyResidence</PropertyType>\n  </SubjectProperty>\n  <ServiceFee>0</ServiceFee>\n  <Contact ContactType=\"Borrower\">\n    <FirstName>Test</FirstName>\n    <LastName>Borrower</LastName>\n    <DaytimePhone>6145551234</DaytimePhone>\n    <EmailAddress>test.borrower@example.com</EmailAddress>\n  </Contact>\n  <TestTransaction>true</TestTransaction>\n  <RushOrder>false</RushOrder>\n  <EstimatedValue>0</EstimatedValue>\n  <PropertyOccupancy>Owner</PropertyOccupancy>\n</AcuityOrder>"
         }
       }
     },
@@ -37,7 +37,7 @@
         "url": { "raw": "{{baseUrl}}", "host": ["{{baseUrl}}"] },
         "body": {
           "mode": "raw",
-          "raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<AcuityCancellation xmlns=\"http://www.acuityexchange.com/schemas/v6.4.0\" SchemaVersion=\"6.4.0\">\n  <MessageHeader>\n    <MessageID>{{$guid}}</MessageID>\n    <SentDateTime>{{$isoTimestamp}}</SentDateTime>\n    <SenderID>{{senderId}}</SenderID>\n    <RecipientID>{{recipientId}}</RecipientID>\n  </MessageHeader>\n  <CancellationDetails>\n    <PartnerReferenceNumber>{{partnerRef}}</PartnerReferenceNumber>\n    <Reason>Test cancellation from Postman</Reason>\n  </CancellationDetails>\n</AcuityCancellation>"
+          "raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<AcuityCancellation xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n  <SenderID>{{senderId}}</SenderID>\n  <RecipientID>{{recipientId}}</RecipientID>\n  <MessageDate>{{$isoTimestamp}}</MessageDate>\n  <System>Acuity</System>\n  <MessageVersion>6.4</MessageVersion>\n  <PartnerReferenceNumber>{{partnerRef}}</PartnerReferenceNumber>\n  <LineItemNumber>1</LineItemNumber>\n  <Reason>Test cancellation from Postman</Reason>\n</AcuityCancellation>"
         }
       }
     }

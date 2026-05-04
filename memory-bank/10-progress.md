@@ -50,14 +50,31 @@
 
 ## Blockers
 
-- **Waiting on ClearValue follow-ups** (blocks live sandbox test):
-  - Full POST path under `https://clients.valorvaluations.com`
-  - PDR ProductCode
-  - Correct XML placement for Master Client ID (56135) and Branch ID (1055)
-  - IP allowlist requirement + our PA outbound IPs if yes
-  - Duplicate PartnerReferenceNumber behavior
-  - Inbound delivery retry policy on their side
-  - Fast-complete sandbox product code (to demo full round-trip)
+**Resolved May 4, 2026 (ClearValue follow-up answers):**
+- ✅ Outbound POST URL: `https://clients.valorvaluations.com/adapters/Integration/Acuity`
+- ✅ Inbound auth: none — Valor does not authenticate itself when posting to us. Mitigation: validate `SenderID` element in our HTTP-trigger flow.
+- ✅ IP allowlist: not required.
+- ✅ TLS: 1.2 or 1.3 supported.
+- ✅ Rate limits: none, but sequential delivery required (updates applied in receive order).
+- ✅ Auth failure: HTTP 401.
+- ✅ Schema validation failure: `<Error><ErrorCode>0500</ErrorCode><ErrorMessage>...</ErrorMessage></Error>` at the top level (NOT wrapped in `<AcuityAcknowledgement>`). Confirmed May 4 with `'fakepropertytype' is not a valid value for AcuityPropertyType` sample.
+- ✅ Outbound→Valor retry policy: on us; Valor→us retry: ~3 connection attempts, then dropped.
+- ✅ Sandbox cleanup: not applicable.
+- ✅ AcuityOrderUpdate exists for partial updates (vs full AcuityOrder for placement).
+- ✅ Inbound URL slot: Valor supports a single outbound URL — re-registering after a PA solution import requires updating Valor too.
+- ✅ Generic RecipientID "VALOR" is acceptable when sending us → Valor.
+
+**Still outstanding (blocks Tier 1 ship):**
+- ⚠️ **PDR ProductCode** — still TBD; ClearValue owes us this. PDC=9 is confirmed; PDR can't be wired until ClearValue confirms.
+- ⚠️ **MasterClientID (56135) and BranchID (1055) XML placement** — confirmed needed but exact element path not provided. Likely `<MasterClientID>` and `<BranchID>` within `<AcuityOrder>` per the framework spec; verify against XSD before shipping.
+- ⚠️ **Duplicate PartnerReferenceNumber behavior** — still unanswered. Affects retry semantics on connection-level failures.
+- ⚠️ **Fast-complete sandbox code** — not provided; needed to demo a full round-trip without waiting for a real inspector.
+
+**Code-level work blocked on PDR code only:**
+- Outbound child placeholder POST → real `HTTP_-_Acuity_Order` (same XML body, real auth, retryPolicy=none): can build today using `https://clients.valorvaluations.com/adapters/Integration/Acuity`. Will work for PDC orders immediately.
+- Inbound flow JaroDesk upload (placeholder → real 3-step Uppy.js upload + tag + deliver): can build today, no ClearValue dependency.
+- Outbound error parser widening (current code only reads `AcuityAcknowledgement.Error.*`; needs to also read top-level `Error.*` per the May 4 sample) — apply the same multi-shape coalesce + `string(...)` fallback pattern from the Magellan AVM Child v33 fix.
+- SenderID validation gate on inbound (one Condition; reject anything where `SenderID != "VALOR"`) — closes the open-HTTP-trigger gap.
 
 ---
 
@@ -67,6 +84,7 @@
 |------|-----|-------|---------|
 | April 17, 2026 | Sal | Feasibility analysis, project setup, flow generation | Analyzed Acuity framework, created feasibility doc, set up project repo/mirror/GitHub, generated both PA flows (outbound child + inbound standalone) with placeholder Compose actions |
 | April 21, 2026 | Sal | Pre-call live-test tooling for ClearValue meeting | Built stdlib-only Python harness (`tools/acuity_sandbox_test.py` — place-order/dry-run/ping modes), Postman collection + environment (`tools/acuity_sandbox.postman_collection.json`, `acuity_sandbox.postman_environment.json`), interactive step-by-step assistant (`tools/acuity_live_call.py`), and `tools/CALL_CHECKLIST.md`. Dry-run verified XML generation. pip blocked by corp SSL → stdlib-only chosen deliberately. |
+| May 4, 2026 | Sal | ClearValue/Valor follow-up answers received | Most outstanding integration questions resolved by Valor (see Blockers section above). Tier 1 (functional MVP) is now unblocked for **PDC orders only**; **PDR ProductCode is still TBD** so PDR routing must wait. Newly captured: outbound POST URL `https://clients.valorvaluations.com/adapters/Integration/Acuity`; Valor does not authenticate when posting to us (mitigate via SenderID validation, not IP allowlist); error response on schema failure is a top-level `<Error>` element (NOT wrapped in `AcuityAcknowledgement`) — implication: the outbound child's response parser must probe both shapes via coalesce, mirroring the Magellan AVM Child v33 multi-shape pattern. Sequential delivery required (Valor applies updates in receive order). AcuityOrderUpdate exists for partial-update flows. Valor retries inbound delivery to us 3x. |
 | April 21, 2026 | Sal | ClearValue live call — partial intake, live test deferred | **Captured:** vendor brand is Valor Valuations, sandbox host `https://clients.valorvaluations.com` (full POST path still TBD), Master Client ID 56135, Branch ID 1055, PDC = ProductCode `9`, credentials + RecipientID captured to gitignored `CALL_CHECKLIST.md`. **Routing logic:** LPA or CaseFile presence on the JaroDesk order determines PDR vs PDC. **Outstanding (ClearValue owes answers):** PDR product code, full sandbox POST path, IP allowlist, TLS version, mTLS, rate limits, duplicate PartnerReferenceNumber behavior, inbound retry policy, fast-complete sandbox code. **Not done on call:** live place-order test (step 5) and inbound webhook round-trip (step 6) — both punted until ClearValue confirms missing pieces. Added `tools/CALL_CHECKLIST.md` to `.gitignore` to keep captured creds out of GitHub. Updated `context.md` with Valor branding, host, master client/branch IDs, and PDR/PDC mapping rule. |
 
 ---
