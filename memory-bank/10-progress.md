@@ -3,7 +3,7 @@
 ## Current Status: In Progress
 
 **Owner:** Sal/Brett  
-**Last Updated:** April 21, 2026
+**Last Updated:** May 7, 2026
 
 ---
 
@@ -30,10 +30,14 @@
 
 ## In Progress
 
-- Sandbox credential configuration with ClearValue Consulting
-  - Blocker: None - ClearValue working with us today
-  - Next step: Confirm SenderID, RecipientID, product codes, and sandbox endpoint URL
-- AlternativeProductsRouter integration - adding Acuity routing condition
+- **Bidirectional sandbox connectivity confirmed (May 7).** Valor received the test order via Postman; the Acuity Inbound webhook URL was provided to Valor and Valor delivered 8 distinct milestone messages to the `Acuity Inbound - Receive Report` flow in Power Automate. Outbound Postman path + inbound webhook receipt are both wire-proven against Valor's sandbox.
+- Code-level work queued for next session (no Valor dependency):
+  1. Pull the 8 inbound run bodies from PA run history; capture message types and any payload (especially any `AcuityReport`) as a real test fixture.
+  2. Add SenderID validation Condition to inbound flow (reject `SenderID != "VALOR"`) — closes the open-HTTP-trigger gap since Valor doesn't authenticate when posting to us.
+  3. Wire the real outbound POST in Acuity Outbound Child (replace placeholder; `https://clients.valorvaluations.com/adapters/Integration/Acuity`; `retryPolicy=none`).
+  4. Widen outbound error parser via multi-shape coalesce + `string(...)` fallback (Magellan v33 pattern) to surface both top-level `<Error>` and `<AcuityAcknowledgement><Error>` shapes.
+  5. Build real JaroDesk 3-step Uppy.js upload (getSignedURL → S3 PUT → register) for `AcuityReport` only; other message types are status-only.
+  6. Fix latent Dataverse `cre4a_apikey` value (currently `"OPTEON"`; generator's split logic expects `OPTEON|VALOR|9`).
 
 ---
 
@@ -89,6 +93,7 @@
 | April 21, 2026 | Sal | Pre-call live-test tooling for ClearValue meeting | Built stdlib-only Python harness (`tools/acuity_sandbox_test.py` — place-order/dry-run/ping modes), Postman collection + environment (`tools/acuity_sandbox.postman_collection.json`, `acuity_sandbox.postman_environment.json`), interactive step-by-step assistant (`tools/acuity_live_call.py`), and `tools/CALL_CHECKLIST.md`. Dry-run verified XML generation. pip blocked by corp SSL → stdlib-only chosen deliberately. |
 | May 4, 2026 | Sal | ClearValue/Valor follow-up answers received | Most outstanding integration questions resolved by Valor (see Blockers section above). Tier 1 (functional MVP) is now unblocked for **PDC orders only**; **PDR ProductCode is still TBD** so PDR routing must wait. Newly captured: outbound POST URL `https://clients.valorvaluations.com/adapters/Integration/Acuity`; Valor does not authenticate when posting to us (mitigate via SenderID validation, not IP allowlist); error response on schema failure is a top-level `<Error>` element (NOT wrapped in `AcuityAcknowledgement`) — implication: the outbound child's response parser must probe both shapes via coalesce, mirroring the Magellan AVM Child v33 multi-shape pattern. Sequential delivery required (Valor applies updates in receive order). AcuityOrderUpdate exists for partial-update flows. Valor retries inbound delivery to us 3x. |
 | April 21, 2026 | Sal | ClearValue live call — partial intake, live test deferred | **Captured:** vendor brand is Valor Valuations, sandbox host `https://clients.valorvaluations.com` (full POST path still TBD), Master Client ID 56135, Branch ID 1055, PDC = ProductCode `9`, credentials + RecipientID captured to gitignored `CALL_CHECKLIST.md`. **Routing logic:** LPA or CaseFile presence on the JaroDesk order determines PDR vs PDC. **Outstanding (ClearValue owes answers):** PDR product code, full sandbox POST path, IP allowlist, TLS version, mTLS, rate limits, duplicate PartnerReferenceNumber behavior, inbound retry policy, fast-complete sandbox code. **Not done on call:** live place-order test (step 5) and inbound webhook round-trip (step 6) — both punted until ClearValue confirms missing pieces. Added `tools/CALL_CHECKLIST.md` to `.gitignore` to keep captured creds out of GitHub. Updated `context.md` with Valor branding, host, master client/branch IDs, and PDR/PDC mapping rule. |
+| May 7, 2026 | Sal | Bidirectional sandbox connectivity confirmed | Valor confirmed receipt of the new order request through Postman. Acuity Inbound webhook URL was provided to Valor and Valor delivered **8 distinct milestone messages** to the `Acuity Inbound - Receive Report` flow in Power Automate. Both directions of the Acuity protocol are now wire-proven against Valor's sandbox. Session was status-confirmation only — no code changes; queued the next-session punch list (8-run audit, SenderID gate, real outbound POST + error parser widening, real JaroDesk Uppy upload for `AcuityReport`, `cre4a_apikey` fix). |
 
 ---
 
