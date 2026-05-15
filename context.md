@@ -42,81 +42,82 @@ This automation integrates JaroDesk with Acuity (ClearValue Consulting) to order
 - **Schema Version:** v6.4.0
 
 ### Key IDs
-| Setting | Dev (Sandbox) | Prod |
-|---------|---------------|------|
-| Outbound POST URL | `https://clients.valorvaluations.com/adapters/Integration/Acuity` | TBD |
-| Master Client ID | 56135 (Valor-side account ID — see note below) | TBD |
-| Branch ID | 1055 (Valor-side account ID — see note below) | TBD |
-| SenderID (us → Valor) | **`OPTEONAMC`** (confirmed by Valor 2026-05-04; supersedes earlier `OPTEON`) | TBD |
-| RecipientID (us → Valor) | "VALOR" works; specific Valor RecipientID captured in checklist | TBD |
 
-**Note on MasterClientID + BranchID placement (RESOLVED 2026-05-04):**
+> **There is no separate sandbox environment.** Confirmed by Valor 2026-05-14: Opteon and Valor both operate in PROD on both sides of the integration. The same endpoint, credentials, and account IDs apply across our DEV/UAT/PROD Power Automate environments. Each Acuity order sent — including test orders — is a real Valor order. Treat with care (real billing, real vendor dispatch).
 
-These values **do not need to be on the wire**. They are Valor-side account identifiers tied to the Basic Auth + SenderID combination. Confirmed by a successful end-to-end test on 2026-05-04: with `senderId=OPTEONAMC` and Basic Auth alone, Valor accepted the AcuityOrder and returned `Success=true` + `ProviderReferenceNumber=1098324.1`. Original hypothesis pre-3003 was correct; the 3003 was driven by the wrong SenderID value, not a missing MasterClient/Branch field.
+| Setting | Value | Notes |
+|---------|-------|-------|
+| Outbound POST URL | `https://clients.valorvaluations.com/adapters/Integration/Acuity` | Single endpoint for all PA environments |
+| Master Client ID | 56135 | Valor-side account ID; **NOT on the wire** (see note) |
+| Branch ID | 1055 | Valor-side account ID; **NOT on the wire** (see note) |
+| SenderID (us → Valor) | `OPTEONAMC` | Confirmed Valor 2026-05-04; supersedes earlier `OPTEON`. Used in outbound XML + inbound ack |
+| RecipientID (us → Valor outbound) | `VALOR` | Used in AcuityOrder XML body |
+| RecipientID (us → Valor inbound ack) | `ACUITY` | Currently sent in inbound AcuityAcknowledgement; pending confirmation against more captured examples |
+| Username | (env var / Dataverse `cre4a_username`) | |
+| Password | (env var / Dataverse `cre4a_password`) | |
 
-**Verified May 4, 2026 against the public 6.4.0 schema package at `https://providers.clearvalueconsulting.com/artifacts/6.4.0.zip`:**
+**Note on MasterClientID + BranchID (RESOLVED 2026-05-14, Valor verbal):**
 
-`MasterClientID` and `BranchID` **do not exist as elements anywhere in the AcuityOrder XSD or any other 6.4.0 message schema.** Full element list of `<AcuityOrder>` is captured below. The closest available fields are:
+Confirmed: Master/Branch are Valor-side account identifiers only and **do not appear on the wire in any form**. Identity binding is Basic Auth + SenderID alone. The earlier hypothesis (pre-3003) was correct all along — the 3003 detour was caused by the wrong SenderID value (`OPTEON` vs the correct `OPTEONAMC`), not a missing Master/Branch field. The 6.4.0 XSD has no element for either ID, and Valor explicitly stated they are not needed on outbound.
 
-- `CostCenter` (xs:string, optional) — single free-form text field
-- `OperationalTag1` / `OperationalTag2` (xs:string, optional) — generic tagging fields
-- `InvestorCode` (xs:string, optional)
-- `BatchName` (xs:string, optional)
-- `ForeignOrderIdentifier` (repeating structured type) — typed Type+Identifier pairs; would cleanly fit a `Type="MasterClientID", Identifier="56135"` shape if Valor wants them on the wire
-- `BroadcastRecipient` (repeating structured type)
+### Product Code (Valor) — Single ProductCode, GSE-program-paired identifier
 
-**Most likely interpretation:** Master Client 56135 and Branch 1055 identify Opteon's account on Valor's side — Basic Auth is the identity binding, and Valor looks up the account internally. We probably do NOT need to embed either value in the AcuityOrder XML.
+**Confirmed by Valor 2026-05-14 (refined from 2026-05-04):** there is **only one ProductCode** for both PDR and PDC. The differentiator is which GSE program drove the order, expressed via the `ForeignOrderIdentifier` element. Both products carry an identifier — they're never identifier-less, and they're never both populated.
 
-**Alternative interpretation:** Valor uses a custom extension to the public 6.4.0 schema (`OperationalTag1`, `CostCenter`, or `ForeignOrderIdentifier` are the natural fits). This would not show up in the public XSD.
+| Product | GSE Program | Acuity ProductCode | ForeignOrderIdentifier |
+|---------|-------------|--------------------|------------------------|
+| PDR | Freddie Mac **ACE** | `9` | `Type="FreddieMacLPAKey"`, ID = LPA Key from JaroDesk |
+| PDC | Fannie Mae **ValueAcceptance** | `9` | `Type="FannieMaeCaseFileID"`, ID = DU CaseFile ID from JaroDesk |
 
-**Action item for Sal:** Confirm with ClearValue/Valor explicitly: "Does the AcuityOrder XML need to carry MasterClientID and BranchID at all? If yes, in which element?" Until confirmed, the outbound child should ship WITHOUT these fields — Basic Auth is the identity mechanism.
-| Username | captured (env var) | (env var) |
-| Password | captured (env var) | (env var) |
+**Mutually exclusive:** never both. One identifier always present.
 
-### Product Code (Valor) — Single ProductCode model
+**Wire placement** — `ForeignOrderIdentifier` element on `AcuityOrder`. Per the 6.4.0 XSD, `ForeignOrderIdentifier.Type` is an `AlternateIDType` enum with these values (only the two below apply to our integration):
+- `FreddieMacLPAKey` ← ACE / PDR
+- `FannieMaeCaseFileID` ← ValueAcceptance / PDC
+- `GSEDocFileID`, `FHADocFileID`, `FannieMaePropertyDataID` (defined in XSD but not used by Valor for our products)
 
-**Confirmed by ClearValue/Valor 2026-05-04:** there is **only one ProductCode** for both PDR and PDC. The differentiator is the LPA Key (Freddie Mac) or CaseFile ID (Fannie Mae) carried in the order — Valor inspects those identifiers to decide whether the work is a PDR (full data report against the GSE submission) or a PDC (collection only).
+Element is repeating (`maxOccurs="unbounded"`) per XSD, but per Valor 2026-05-14 we emit exactly one per order.
 
-| Product | Acuity ProductCode | How Valor knows it's this product |
-|---------|--------------------|----------------------------------|
-| PDC | `9` | LPA Key / CaseFile ID **absent** |
-| PDR | `9` (same) | LPA Key (`FreddieMacLPAKey`) or CaseFile ID (`FannieMaeCaseFileID`) **present** in the order |
-
-**Wire placement for the differentiator** — `ForeignOrderIdentifier` element on `AcuityOrder`. Per the 6.4.0 XSD (`AcuityOrder.xsd` lines 247-256), `ForeignOrderIdentifier.Type` is an `AlternateIDType` enum with exactly these values:
-- `GSEDocFileID`
-- `FHADocFileID`
-- `FannieMaeCaseFileID`
-- `FannieMaePropertyDataID`
-- `FreddieMacLPAKey`
-
-Element is repeating (`maxOccurs="unbounded"`), so an order can carry multiple. Example for PDR:
+Example for PDR:
 ```xml
-<ForeignOrderIdentifier ID="LPA-12345-ABCDEF" Type="FreddieMacLPAKey" />
+<ForeignOrderIdentifier ID="AN815824" Type="FreddieMacLPAKey" />
 ```
-Empty/absent = Valor defaults to PDC behavior.
 
-**Implication for Acuity Outbound Child design:**
-- The flow does NOT need to lookup different ProductCodes per routing key. Always send `9`.
-- The flow DOES need to thread JaroDesk's LPA Key and/or CaseFile ID into the AcuityOrder XML when present.
-- The router's `pdr` vs `pdc` routing keys still serve a purpose — they document which JaroDesk product was ordered — but downstream of the Acuity child the only behavioral difference is whether to emit `ForeignOrderIdentifier`.
-- Source of LPA Key / CaseFile ID on JaroDesk side: TBD. Likely `loan_number`, custom fields, or attachments. Confirm with stakeholders during the meeting where PDR routing rule was set.
+Example for PDC:
+```xml
+<ForeignOrderIdentifier ID="AN815824" Type="FannieMaeCaseFileID" />
+```
 
-**Routing rule:** `LPA or CaseFile` presence on the JaroDesk order drives PDR selection; absence = PDC. Encode this in the router upstream so this flow only receives the already-resolved product code.
+**JaroDesk source for the identifier values:**
+- Endpoint: `GET https://api.jarodesk.com/v1/order/{order_id}/incremental`
+- Path: `body.details.details.lpaKey` and `body.details.details.duCaseFileId`
+- Note: JaroDesk may populate both fields with the same value on the same order. Use the router's `pdr` vs `pdc` case as the authority for which identifier to emit (PDR → use `lpaKey`, PDC → use `duCaseFileId`).
+
+**Implication for Acuity Outbound Child design (v36 of the generator):**
+- ProductCode is hardcoded to `9` in the outbound XML construction. No Dataverse lookup needed for product.
+- The child accepts `FreddieMacLPAKey` + `FannieMaeCaseFileID` as optional trigger inputs.
+- The child emits one `<ForeignOrderIdentifier>` element via conditional Compose action: LPA Key wins if both populated; if neither, no element emitted (preserves backward compatibility).
+- Router-side work (queued for v37): add `HTTP_-_Get_Order_Incremental` action; populate router variables `FreddieMacLPAKey` + `FannieMaeCaseFileID` from the incremental endpoint; pass them through PDR/PDC case body invocations.
 
 ### Data Mapping: JaroDesk to Acuity
 
 | JaroDesk Field | Acuity XML Field | Notes |
 |----------------|-----------------|-------|
 | Order ID | `PartnerReferenceNumber` | Tracking key for async matching |
-| Product/Form type | `ProductCode` | Lookup table needed |
-| Loan type | `Loan > LoanType` | Enum mapping |
-| Loan purpose | `Loan > LoanPurpose` | Enum mapping |
+| (none — hardcoded) | `ProductCode` | Always `9` per Valor 2026-05-14; no lookup |
+| Loan type | `Loan > LoanType` | Enum passes 1:1, no transformation (Valor 2026-05-14) |
+| Loan purpose | `Loan > LoanPurpose` | Enum passes 1:1, no transformation (Valor 2026-05-14) |
 | Loan number | `Loan > LoanNumber` | Pass-through |
+| `incremental.body.details.details.lpaKey` | `ForeignOrderIdentifier ID="..." Type="FreddieMacLPAKey"` | PDR/ACE only |
+| `incremental.body.details.details.duCaseFileId` | `ForeignOrderIdentifier ID="..." Type="FannieMaeCaseFileID"` | PDC/ValueAcceptance only |
 | Property address | `SubjectProperty > Address1/City/State/PostalCode` | Direct mapping |
-| Property type | `SubjectProperty > PropertyType` | Enum mapping |
-| Sales price | `SubjectProperty > SalesPrice` | Pass-through |
-| Borrower name | `Contact[@ContactType="Borrower"]` | Split First/Last |
+| Property type | `SubjectProperty > PropertyType` | Enum passes 1:1, no transformation (Valor 2026-05-14) |
+| Borrower name | `Contact[@ContactType="Borrower"]` | Split First/Last; ContactType enum passes 1:1 |
 | Borrower phone | `Contact > DaytimePhone` | Pass-through |
+| Entry contact (JaroDesk) | `PropertyAccess` | Valor 2026-05-14 |
+
+**Removed from prior mapping:**
+- ~~Sales price → SubjectProperty.SalesPrice~~ — Valor confirmed 2026-05-14 the field is **not consumed**; do not emit.
 
 ### Key Acuity Message Types
 
@@ -133,7 +134,7 @@ Empty/absent = Valor defaults to PDC behavior.
 
 ### Error Response Shapes
 
-Valor returns errors in **two distinct shapes** depending on which validation layer fired (confirmed May 4 via "fakepropertytype" sample):
+Valor returns errors in **two distinct shapes** depending on which validation layer fired:
 
 1. **Schema/instance validation failure (e.g. enum mismatch):** top-level `<Error>` element, NOT wrapped in `<AcuityAcknowledgement>`:
    ```xml
@@ -142,8 +143,18 @@ Valor returns errors in **two distinct shapes** depending on which validation la
      <ErrorMessage>Instance validation error: 'fakepropertytype' is not a valid value for AcuityPropertyType.</ErrorMessage>
    </Error>
    ```
-2. **Business-logic failure inside an accepted envelope:** wrapped as `<AcuityAcknowledgement><Error><ErrorCode/><ErrorMessage/></Error></AcuityAcknowledgement>` (assumed; not yet confirmed live).
+2. **Business-logic failure inside an accepted envelope:** wrapped as `<AcuityAcknowledgement><Error><ErrorCode/><ErrorMessage/></Error></AcuityAcknowledgement>`. Confirmed live via the May 4 `3003 client profile` rejection.
 3. **Auth failure:** HTTP 401, body shape unspecified.
+
+### Known error codes
+
+| Code | Meaning | Response shape | Source |
+|------|---------|----------------|--------|
+| `0500` | Schema / instance validation failure (e.g. enum mismatch) | Top-level `<Error>` | Valor sample 2026-05-04 |
+| `3003` | Client profile cannot be determined (e.g. wrong SenderID) | Wrapped in `<AcuityAcknowledgement>` | Live retest 2026-05-04 (resolved by switching `OPTEON` → `OPTEONAMC`) |
+| `3019` | Duplicate `PartnerReferenceNumber` — order already received | Shape TBD (likely wrapped, confirm next occurrence) | Valor verbal 2026-05-14 |
+
+**Handling responsibility for `3019`:** when fired, write a JaroDesk-visible message (note / case event) flagging duplicate detection. Implies an idempotency table (Dataverse, keyed on `PartnerReferenceNumber`) so the outbound flow can know "already sent and acked" before retrying on transient 5xx.
 
 **Implication for outbound child:** the response parser must probe both shapes via coalesce — same pattern as the Magellan AVM Child v33 fix. Current code only reads `AcuityAcknowledgement.Error.*`; needs widening to also read top-level `Error.*` and to fall through to `string(...)` of the full response if neither path resolves. Reference the `feedback_surface_literal_api_errors` shared lesson.
 

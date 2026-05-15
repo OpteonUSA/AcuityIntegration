@@ -2,8 +2,8 @@
 
 ## Current Status: In Progress
 
-**Owner:** Sal/Brett  
-**Last Updated:** May 7, 2026
+**Owner:** Sal Vacanti
+**Last Updated:** May 15, 2026
 
 ---
 
@@ -30,14 +30,18 @@
 
 ## In Progress
 
-- **Bidirectional sandbox connectivity confirmed (May 7).** Valor received the test order via Postman; the Acuity Inbound webhook URL was provided to Valor and Valor delivered 8 distinct milestone messages to the `Acuity Inbound - Receive Report` flow in Power Automate. Outbound Postman path + inbound webhook receipt are both wire-proven against Valor's sandbox.
-- Code-level work queued for next session (no Valor dependency):
-  1. Pull the 8 inbound run bodies from PA run history; capture message types and any payload (especially any `AcuityReport`) as a real test fixture.
-  2. Add SenderID validation Condition to inbound flow (reject `SenderID != "VALOR"`) — closes the open-HTTP-trigger gap since Valor doesn't authenticate when posting to us.
-  3. Wire the real outbound POST in Acuity Outbound Child (replace placeholder; `https://clients.valorvaluations.com/adapters/Integration/Acuity`; `retryPolicy=none`).
-  4. Widen outbound error parser via multi-shape coalesce + `string(...)` fallback (Magellan v33 pattern) to surface both top-level `<Error>` and `<AcuityAcknowledgement><Error>` shapes.
-  5. Build real JaroDesk 3-step Uppy.js upload (getSignedURL → S3 PUT → register) for `AcuityReport` only; other message types are status-only.
-  6. Fix latent Dataverse `cre4a_apikey` value (currently `"OPTEON"`; generator's split logic expects `OPTEON|VALOR|9`).
+- **Bidirectional connectivity wire-proven** (May 7 inbound + May 4 outbound postman). One `AcuityReport` has been received and captured at `responses/response-report.md` with full HTTP trigger envelope, raw XML, our ack, and the post-parse JSON shape.
+- **All May 14 meeting blockers resolved** — see "Resolved" section below; nothing outstanding from Valor's side except the canonical inbound message-type inventory (Jeanette committed to send).
+- **Generator v36 ready to import** (Acuity Outbound Path B refactor + inbound ack SenderID fix). v37 work queued: router-side wiring of GSE identifiers from JaroDesk incremental endpoint.
+- Code-level work remaining (sequenced):
+  1. **(v36 import)** Import `AlternativeProductsRouter_1_0_0_36_unmanaged.zip` to PA DEV; verify both Acuity flows turn on cleanly.
+  2. **(v37 router refactor)** Add `HTTP_-_Get_Order_Incremental` action calling `GET /v1/order/{id}/incremental`; parse `body.details.details.lpaKey` + `duCaseFileId`; populate router variables; pass to Acuity Outbound child in PDR/PDC cases.
+  3. **(v37)** Add SenderID validation Condition to inbound flow (reject `SenderID != "OPTEONAMC"`) — closes the open-HTTP-trigger gap since Valor doesn't authenticate when posting to us.
+  4. **(v37)** Wire the real outbound POST in Acuity Outbound Child (replace placeholder Compose; `retryPolicy=none`).
+  5. **(v37)** Widen outbound error parser via multi-shape coalesce + `string(...)` fallback (Magellan v33 pattern) to surface top-level `<Error>` AND `<AcuityAcknowledgement><Error>` shapes. Add explicit handling for the **`3019` duplicate `PartnerReferenceNumber`** code — write JaroDesk-visible note when fired.
+  6. **(v37)** Build real JaroDesk 3-step Uppy.js upload (getSignedURL → S3 PUT → register) for `AcuityReport` only; other message types are status-only. Use the May 7 `AcuityReport` at `responses/response-report.md` as the test fixture.
+  7. **(v37)** Idempotency table (Dataverse, keyed on `PartnerReferenceNumber`) to track "sent / acked" before retrying on transient 5xx — duplicate-PRN rejection in PROD makes blind retries unsafe.
+  8. **(beyond v37)** Build out Case logic in `Acuity Inbound - Receive Report` for the full message-type catalog (awaiting Jeanette's inventory; 8 milestone bodies from May 7 already in PA run history as starting material).
 
 ---
 
@@ -53,6 +57,30 @@
 ---
 
 ## Blockers
+
+**All previously-open blockers resolved as of 2026-05-14 (Acuity meeting with Jeanette / Valor).** No remaining items blocking Tier 1 ship for either PDR or PDC.
+
+**Resolved May 14, 2026 (Acuity meeting):**
+- ✅ **MasterClientID / BranchID XML placement** — confirmed NOT on the wire. Basic Auth + SenderID alone is the identity binding. Master/Branch are Valor-side account record fields only.
+- ✅ **Duplicate `PartnerReferenceNumber` in PROD** — Valor returns error code `3019`. Sandbox accepting duplicates was non-representative; PROD is stricter. Our handling: write JaroDesk-visible duplicate-detection note + design retry path around an idempotency table.
+- ✅ **"Sandbox" vs PROD distinction is moot** — there is no separate sandbox environment. Both Opteon and Valor operate in PROD on both sides. Same endpoint + creds + account IDs across our DEV/UAT/PROD Power Automate environments. Every test order is a real Valor order.
+- ✅ **Fast-complete sandbox code** — does not exist. Valor cannot test-submit to Fannie/Freddie GSE APIs from anywhere. Full end-to-end demos require a real inspector (PDC) or are gated on the real GSE submission step (PDR).
+- ✅ **Enum mapping** for `PropertyType`, `LoanType`, `LoanPurpose`, `ContactType` — passes 1:1 from JaroDesk to Valor; no transformation layer needed.
+- ✅ **`<ForeignOrderIdentifier>` shape** — mutually exclusive, GSE-program-paired:
+  - ACE + PDR → `Type="FreddieMacLPAKey"`
+  - ValueAcceptance + PDC → `Type="FannieMaeCaseFileID"`
+- ✅ **`<SalesPrice>`** — Valor confirmed it is NOT consumed. Drop from outbound payload.
+- ✅ **JaroDesk Entry contact** → maps to Valor `<PropertyAccess>` element.
+- ✅ **JaroDesk source for GSE identifiers** — `GET /v1/order/{id}/incremental` returns `body.details.details.lpaKey` and `body.details.details.duCaseFileId`. v37 router work uses this endpoint.
+- ✅ **Vendor profile setup in JaroDesk** — `orders@valorvaluations.com` for PROD; `jeanette@valorvaluations.com` for testing. Provisional plan: add Jeanette to the live vendor account so test orders ride real JaroDesk routing.
+
+**Awaiting from Valor (low-priority, post-meeting deliverable):**
+- Jeanette will send the complete inbound message-type inventory so we can size the Case-build scope before relying solely on the 8 milestone messages captured May 7.
+
+**Bug surfaced + fixed in v36 (2026-05-15):**
+- The inbound `Acuity Inbound - Receive Report` flow's ack to Valor had `<SenderID>OPTEON</SenderID>` (should always be `OPTEONAMC`). Hardcoded literal in the generator; fixed at line 2912. RecipientID kept as `ACUITY` pending more captured examples before changing.
+
+---
 
 **Resolved May 4, 2026 (ClearValue follow-up answers):**
 - ✅ Outbound POST URL: `https://clients.valorvaluations.com/adapters/Integration/Acuity`
@@ -94,6 +122,8 @@
 | May 4, 2026 | Sal | ClearValue/Valor follow-up answers received | Most outstanding integration questions resolved by Valor (see Blockers section above). Tier 1 (functional MVP) is now unblocked for **PDC orders only**; **PDR ProductCode is still TBD** so PDR routing must wait. Newly captured: outbound POST URL `https://clients.valorvaluations.com/adapters/Integration/Acuity`; Valor does not authenticate when posting to us (mitigate via SenderID validation, not IP allowlist); error response on schema failure is a top-level `<Error>` element (NOT wrapped in `AcuityAcknowledgement`) — implication: the outbound child's response parser must probe both shapes via coalesce, mirroring the Magellan AVM Child v33 multi-shape pattern. Sequential delivery required (Valor applies updates in receive order). AcuityOrderUpdate exists for partial-update flows. Valor retries inbound delivery to us 3x. |
 | April 21, 2026 | Sal | ClearValue live call — partial intake, live test deferred | **Captured:** vendor brand is Valor Valuations, sandbox host `https://clients.valorvaluations.com` (full POST path still TBD), Master Client ID 56135, Branch ID 1055, PDC = ProductCode `9`, credentials + RecipientID captured to gitignored `CALL_CHECKLIST.md`. **Routing logic:** LPA or CaseFile presence on the JaroDesk order determines PDR vs PDC. **Outstanding (ClearValue owes answers):** PDR product code, full sandbox POST path, IP allowlist, TLS version, mTLS, rate limits, duplicate PartnerReferenceNumber behavior, inbound retry policy, fast-complete sandbox code. **Not done on call:** live place-order test (step 5) and inbound webhook round-trip (step 6) — both punted until ClearValue confirms missing pieces. Added `tools/CALL_CHECKLIST.md` to `.gitignore` to keep captured creds out of GitHub. Updated `context.md` with Valor branding, host, master client/branch IDs, and PDR/PDC mapping rule. |
 | May 7, 2026 | Sal | Bidirectional sandbox connectivity confirmed | Valor confirmed receipt of the new order request through Postman. Acuity Inbound webhook URL was provided to Valor and Valor delivered **8 distinct milestone messages** to the `Acuity Inbound - Receive Report` flow in Power Automate. Both directions of the Acuity protocol are now wire-proven against Valor's sandbox. Session was status-confirmation only — no code changes; queued the next-session punch list (8-run audit, SenderID gate, real outbound POST + error parser widening, real JaroDesk Uppy upload for `AcuityReport`, `cre4a_apikey` fix). |
+| May 14, 2026 | Sal | Acuity meeting with Jeanette (Valor) | All previously-open blockers resolved (see Blockers section). Net protocol clarifications: Master/Branch IDs stay off the wire; duplicate PRN in PROD returns error 3019; no separate sandbox environment exists; PropertyType/LoanType/LoanPurpose/ContactType enums pass 1:1; ForeignOrderIdentifier is mutually exclusive (ACE+PDR→FreddieMacLPAKey, ValueAcceptance+PDC→FannieMaeCaseFileID); SalesPrice is not consumed; JaroDesk Entry contact maps to PropertyAccess; vendor profile setup planned with Jeanette on the live vendor account for test routing. Live notes captured at `_meeting_notes/2026-05-14_acuity_prep.md`. |
+| May 15, 2026 | Sal | First real AcuityReport received; v36 generator refactor | Captured first end-to-end `AcuityReport` from Valor (sample at `responses/response-report.md` — includes HTTP envelope, raw XML, our ack, and post-parse JSON shape; one AppraisalReport PDF inline as base64). Surfaced bug: inbound ack sent `<SenderID>OPTEON</SenderID>` instead of always-`OPTEONAMC`. Generator refactor v36: (a) inbound ack SenderID fixed to OPTEONAMC literal; (b) Acuity Outbound Path B refactor — dropped pipe-split of `cre4a_apikey`, SenderID now reads it directly, RecipientID/ProductCode hardcoded (`VALOR`/`9`) since they're stable constants per Valor 2026-05-14; (c) added `ACUITY_OUT_CHILD_INPUTS` trigger schema with `FreddieMacLPAKey` + `FannieMaeCaseFileID` (both optional); (d) added `Compose_-_ForeignOrderIdentifier_XML` with conditional emission. Output: `AlternativeProductsRouter_1_0_0_36_unmanaged.zip`. Router-side wiring of the GSE identifiers from `GET /v1/order/{id}/incremental` queued for v37. context.md updated with all meeting outcomes + new error code 3019. |
 
 ---
 

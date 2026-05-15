@@ -19,3 +19,7 @@ Thumbs.db
 
 # Power Automate exports (track these explicitly)
 # *.zip
+
+# Vendor schema package (local reference copy of the 6.4.0 XSD bundle from
+# providers.clearvalueconsulting.com — not source code we own)
+Acuity Integreation Framework/
